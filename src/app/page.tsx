@@ -1,9 +1,7 @@
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSeparator,
-  InputOTPSlot,
-} from "@/components/ui/input-otp"
+
+import Link from 'next/link'
+import { Button } from "@/components/ui/button"
+
 
 
 export default function Home() {
@@ -12,20 +10,13 @@ export default function Home() {
       <div className="text-7xl mb-5">
         Badger Bash
       </div>
+      <div className="mb-5">
+        <Button asChild>
+          <Link href="/join-lobby">Join Game Lobby</Link>
+        </Button>
+      </div>
       <div>
-        <InputOTP maxLength={6}>
-          <InputOTPGroup>
-            <InputOTPSlot index={0} />
-            <InputOTPSlot index={1} />
-            <InputOTPSlot index={2} />
-          </InputOTPGroup>
-          <InputOTPSeparator />
-          <InputOTPGroup>
-            <InputOTPSlot index={3} />
-            <InputOTPSlot index={4} />
-            <InputOTPSlot index={5} />
-          </InputOTPGroup>
-        </InputOTP>
+        <Button>Create Game Lobby</Button>
       </div>
     </div>
   );
