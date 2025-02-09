@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
 
-export default function Lobby () {
+export default function JoinLobby () {
     return(
         <div>
             <Button className="absolute mt-5 ml-5" variant="outline" size="icon" asChild>
@@ -26,8 +26,8 @@ export default function Lobby () {
             <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2">
                 <Tabs className="w-full max-w-md">
                     <TabsList>
-                        <TabsTrigger value="public">Public Lobbies</TabsTrigger>
                         <TabsTrigger value="private">Private Lobbies</TabsTrigger>
+                        <TabsTrigger value="public">Public Lobbies</TabsTrigger>
                     </TabsList>
                     <TabsContent value="public">
                         {/* List of available game lobbies */}
