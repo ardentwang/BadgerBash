@@ -7,6 +7,10 @@ import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
+interface PlayerSlotProps {
+  number: number;
+}
+
 const LobbyCreation = () => {
   const [lobbyName, setLobbyName] = useState('New Lobby');
   const [lobbyCode, setLobbyCode] = useState('');
@@ -22,7 +26,8 @@ const LobbyCreation = () => {
   }, []);
 
   //POSSIBLE BOT IMPLEMENTATION?!??!?!?
-  const PlayerSlot = ({ number }) => (
+  // React.FC will make it so the typing of the argument is ignored - remember to either adjust or delete when adding future implementation :3
+  const PlayerSlot: React.FC<PlayerSlotProps> = ({ number }) => (
     <div className="flex items-center justify-center w-full h-24 bg-secondary rounded-lg border-2 border-border">
       <p className="text-muted-foreground">Player {number}</p>
     </div>
