@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useRef } from 'react';
 import { PlayCircle, PauseCircle, StopCircle } from 'lucide-react';
 import { buttonVariants } from "@/components/ui/button";
@@ -34,68 +36,11 @@ const MusicPlayer = () => {
     }
   };
 
-  const stopPlayback = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlaying(false);
-      setCurrentSong(null);
-    }
-  };
-
-  return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Choose Background Music</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-3">
-          {songs.map((song) => (
-            <button
-              key={song.id}
-              onClick={() => playSong(song)}
-              className={buttonVariants({
-                variant: "link",
-                className: "w-full justify-start"
-              })}
-            >
-              {currentSong?.id === song.id ? (
-                isPlaying ? (
-                  <PauseCircle className="text-primary" />
-                ) : (
-                  <PlayCircle className="text-primary" />
-                )
-              ) : (
-                <PlayCircle className="text-muted-foreground" />
-              )}
-              {song.title}
-            </button>
-          ))}
-        </div>
-        
-        {currentSong && (
-          <div className="flex justify-center">
-            <button
-              onClick={stopPlayback}
-              className={buttonVariants({
-                variant: "link",
-                size: "sm"
-              })}
-            >
-              <StopCircle />
-              Stop Music
-            </button>
-          </div>
-        )}
-        
-        {currentSong && (
-          <p className="text-center text-sm text-muted-foreground">
-            Now Playing: {currentSong.title}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
+  return(
+    <div>
+        "Hello World"
+    </div>
+  )
+}
 
 export default MusicPlayer;

@@ -1,7 +1,5 @@
-"use client"
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
-import MusicPlayer from '@/components/musicplayer'
 
 export default function Home() {
   return (
@@ -20,10 +18,6 @@ export default function Home() {
             <Link href="/create-lobby">Create Game Lobby</Link>
           </Button>
         </div>
-      </div>
-      
-      <div className="fixed bottom-4 right-4 z-50">
-        <MusicPlayer />
       </div>
     </div>
   );

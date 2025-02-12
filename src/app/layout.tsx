@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Pixelify_Sans } from 'next/font/google'
+import MusicPlayer from "@/components/musicplayer";
 
 const pixelifySans = Pixelify_Sans({
   subsets: ['latin'],
@@ -9,7 +10,7 @@ const pixelifySans = Pixelify_Sans({
 
 export const metadata: Metadata = {
   title: "BadgerBash",
-  description: "Play quick games with your friends!",
+  description: "Play quick games with your friends! Uno, Monopoly, Codenames, multiplayer party games for a chill night gaming experience!",
 };
 
 export default function RootLayout({
@@ -22,6 +23,9 @@ export default function RootLayout({
       <body
         className={`${pixelifySans.className}`}
       >
+      <div className="fixed top-4 left-4">
+        <MusicPlayer/>
+      </div>
         {children}
       </body>
     </html>
