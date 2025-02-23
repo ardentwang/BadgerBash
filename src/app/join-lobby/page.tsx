@@ -31,7 +31,7 @@ export default function JoinLobby () {
     const [lobbies, setLobbies] = useState<Lobby[]>([])
     useEffect(() => {
         async function getLobbies() {
-            let { data } = await supabase.from('lobbies').select('*');
+            const { data } = await supabase.from('lobbies').select('*');
             console.log("Fetched data: ", data);
             setLobbies(data || []);
         }
