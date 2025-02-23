@@ -28,30 +28,10 @@ interface Lobby {
 
 
 export default function JoinLobby () {
-    const lobbies1 = [
-        {
-            "lobby_id": "1",
-            "name": "lobbyOne",
-            "player_count": 1,
-            "isPublic": false
-        },
-        {
-            "lobby_id": "2",
-            "name": "lobbyTwo",
-            "player_count": 1,
-            "isPublic": false
-        },
-        {
-            "lobby_id": "3",
-            "name": "lobbyTwo",
-            "player_count": 1,
-            "isPublic": true
-        },
-    ]
     const [lobbies, setLobbies] = useState<Lobby[]>([])
     useEffect(() => {
         async function getLobbies() {
-            let { data } = await supabase.from('lobbies').select('*');
+            const { data } = await supabase.from('lobbies').select('*');
             console.log("Fetched data: ", data);
             setLobbies(data || []);
         }
