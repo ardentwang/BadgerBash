@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-//import {supabase} from "@/lib/supabase"
+import {supabase} from "@/lib/supabase"
 
 interface PlayerSlotProps {
   number: number;
@@ -15,22 +15,50 @@ interface PlayerSlotProps {
 const LobbyCreation = () => {
   const [lobbyName, setLobbyName] = useState('New Lobby');
   const [lobbyCode, setLobbyCode] = useState('');
-  //const [lobbies, setLobbies] = useState([])
 
-  //YO I NEEDA FIND A WAY TO MAKE THIS UNIQUE AND INTEGRATION
   useEffect(() => {
-    const generateCode = () => {
-      const code = Math.floor(100 + Math.random() * 900).toString();
-      const secondcode = Math.floor(100 + Math.random() * 900).toString();
-      setLobbyCode(code + " - " + secondcode);
-    };
-    const getLobbies = async() => {
-      //let lobbylist = await supabase.from("lobbies").select('*');
-      //setLobbies(lobbylist)
+    const getLobbyCodes = async () => {
+      const { data } = await supabase
+          .from('lobbies')
+          .select('lobby_code');
+      console.log("Raw data:", data);
+      return data?.map(lobby => lobby.lobby_code) || [];
     }
-    generateCode();
-    getLobbies();
+
+    const generateUniqueCode = async () => {
+        const existingCodes = await getLobbyCodes();
+        let code;
+        do {
+            const firstPart = Math.floor(100 + Math.random() * 900).toString();
+            const secondPart = Math.floor(100 + Math.random() * 900).toString();
+            code = firstPart + secondPart;
+        } while (existingCodes.includes(code));
+
+        setLobbyCode(code);
+    };
+
+    generateUniqueCode();
   }, []);
+
+  useEffect(() => {
+    const generateLobby = async() => {
+      const { error } = await supabase
+        .from('lobbies')
+        .insert([
+          { 
+            name: 'lobbyName', 
+            player_count: 1, 
+            is_public: false, 
+            lobby_code: parseInt(lobbyCode)
+          }
+        ])
+        .select()
+
+      if (error) console.error('Error creating lobby:', error);
+    }
+
+    generateLobby();
+  }, [lobbyCode]);
 
   //POSSIBLE BOT IMPLEMENTATION?!??!?!?
   // React.FC will make it so the typing of the argument is ignored - remember to either adjust or delete when adding future implementation :3
@@ -50,16 +78,28 @@ const LobbyCreation = () => {
         <div className="min-h-screen w-full flex items-center justify-center p-4">
         <Card className="w-full max-w-2xl">
             <CardHeader className="space-y-4">
-            <div className="space-y-2">
-                <label htmlFor="lobbyName" className="text-sm font-medium">
-                Lobby Name
-                </label>
-                <Input
-                id="lobbyName"
-                value={lobbyName}
-                onChange={(e) => setLobbyName(e.target.value)}
-                className="text-lg font-semibold"
-                />
+              <div className="space-y-2">
+                  <label htmlFor="lobbyName" className="text-sm font-medium">
+                  Lobby Name
+                  </label>
+                  <Input
+                    id="lobbyName"
+                    value={lobbyName}
+                    onChange={(e) => setLobbyName(e.target.value)}
+                    onBlur={async () => {
+                        // update backend when user finishes editing
+                        const { error } = await supabase
+                            .from('lobbies')
+                            .update({ name: lobbyName }) 
+                            .eq('lobby_code', lobbyCode) 
+                            .select()
+
+                        if (error) {
+                            console.error('Error updating lobby name:', error);
+                        }
+                    }}
+                    className="text-lg font-semibold"
+                  />
             </div>
             <div className="space-y-2">
                 <label className="text-sm font-medium">Lobby Code</label>

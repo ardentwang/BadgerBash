@@ -24,8 +24,6 @@ interface Lobby {
     player_count: number;
     isPublic: boolean;
 }
-  
-
 
 export default function JoinLobby () {
     const [lobbies, setLobbies] = useState<Lobby[]>([])
