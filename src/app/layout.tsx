@@ -23,6 +23,7 @@ export default function RootLayout({
       <body
         className={`${pixelifySans.className}`}
       >
+        
         <MusicPlayer />
         {children}
       </body>
