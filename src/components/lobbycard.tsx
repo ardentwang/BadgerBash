@@ -3,7 +3,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from "@/components/ui/button"
 
 interface LobbyProps {
-    lobby_id?: number,
+    lobby_id?: string,
     name: string,
     isPublic?: boolean,
     player_count: number 

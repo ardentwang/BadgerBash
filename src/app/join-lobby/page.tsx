@@ -1,3 +1,4 @@
+"use client"
 import {
     InputOTP,
     InputOTPGroup,
@@ -14,29 +15,48 @@ import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import LobbyCard from "@/components/lobbycard"
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+
+interface Lobby {
+    lobby_id: string;
+    name: string;
+    player_count: number;
+    isPublic: boolean;
+}
+  
 
 
 export default function JoinLobby () {
-    const lobbies = [
+    const lobbies1 = [
         {
-            "lobby_id": 1,
+            "lobby_id": "1",
             "name": "lobbyOne",
             "player_count": 1,
             "isPublic": false
         },
         {
-            "lobby_id": 2,
+            "lobby_id": "2",
             "name": "lobbyTwo",
             "player_count": 1,
             "isPublic": false
         },
         {
-            "lobby_id": 3,
+            "lobby_id": "3",
             "name": "lobbyTwo",
             "player_count": 1,
             "isPublic": true
         },
     ]
+    const [lobbies, setLobbies] = useState<Lobby[]>([])
+    useEffect(() => {
+        async function getLobbies() {
+            let { data } = await supabase.from('lobbies').select('*');
+            console.log("Fetched data: ", data);
+            setLobbies(data || []);
+        }
+        getLobbies()
+    }, [])
 
 
     return(
