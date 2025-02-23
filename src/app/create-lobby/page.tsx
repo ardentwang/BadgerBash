@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+//import {supabase} from "@/lib/supabase"
 
 interface PlayerSlotProps {
   number: number;
@@ -14,6 +15,7 @@ interface PlayerSlotProps {
 const LobbyCreation = () => {
   const [lobbyName, setLobbyName] = useState('New Lobby');
   const [lobbyCode, setLobbyCode] = useState('');
+  //const [lobbies, setLobbies] = useState([])
 
   //YO I NEEDA FIND A WAY TO MAKE THIS UNIQUE AND INTEGRATION
   useEffect(() => {
@@ -22,7 +24,12 @@ const LobbyCreation = () => {
       const secondcode = Math.floor(100 + Math.random() * 900).toString();
       setLobbyCode(code + " - " + secondcode);
     };
+    const getLobbies = async() => {
+      //let lobbylist = await supabase.from("lobbies").select('*');
+      //setLobbies(lobbylist)
+    }
     generateCode();
+    getLobbies();
   }, []);
 
   //POSSIBLE BOT IMPLEMENTATION?!??!?!?

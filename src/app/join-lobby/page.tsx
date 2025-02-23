@@ -13,9 +13,32 @@ import {
 import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import LobbyCard from "@/components/lobbycard"
 
 
 export default function JoinLobby () {
+    const lobbies = [
+        {
+            "lobby_id": 1,
+            "name": "lobbyOne",
+            "player_count": 1,
+            "isPublic": false
+        },
+        {
+            "lobby_id": 2,
+            "name": "lobbyTwo",
+            "player_count": 1,
+            "isPublic": false
+        },
+        {
+            "lobby_id": 3,
+            "name": "lobbyTwo",
+            "player_count": 1,
+            "isPublic": true
+        },
+    ]
+
+
     return(
         <div>
             <Button className="absolute mt-5 ml-5" variant="outline" size="icon" asChild>
@@ -23,14 +46,26 @@ export default function JoinLobby () {
                     <ChevronLeft />
                 </Link>
             </Button>
-            <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2">
-                <Tabs className="w-full max-w-md">
+            {/** 
+             * absolute = start from top left since there's no relative css
+             * left-1/2 = move right by 1/2 of screen
+             * transform -translate-x-1/2 = move horizontally by 1/2 of its width (x), truly centered
+             */}
+            <div className="absolute mt-10 left-1/2 transform -translate-x-1/2 w-fit">
+                <Tabs className="w-full">
                     <TabsList>
                         <TabsTrigger value="private">Private Lobbies</TabsTrigger>
                         <TabsTrigger value="public">Public Lobbies</TabsTrigger>
                     </TabsList>
-                    <TabsContent value="public">
-                        {/* List of available game lobbies */}
+                    <TabsContent value="public" className="w-full">
+                        <div className="w-full">
+                            {lobbies.map((lobby) => 
+                                <LobbyCard
+                                    key={lobby.lobby_id}
+                                    {...lobby}
+                                />
+                            )}
+                        </div>
                     </TabsContent>
                     <TabsContent value="private" className="absolute flex flex-col">
                         <div className="mb-5">Please enter the 6 digit code provided to the owner of the private lobby</div>

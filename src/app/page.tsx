@@ -8,13 +8,13 @@ export default function Home() {
         <div className="text-7xl mb-5">
           Badger Bash
         </div>
-        <div className="mb-5">
-          <Button asChild>
+        <div className="mb-5 w-48">
+          <Button className="w-full text-md" size="lg" asChild>
             <Link href="/join-lobby">Join Game Lobby</Link>
           </Button>
         </div>
-        <div>
-          <Button asChild>
+        <div className='w-48'>
+          <Button className="w-full text-md" size="lg" asChild>
             <Link href="/create-lobby">Create Game Lobby</Link>
           </Button>
         </div>
