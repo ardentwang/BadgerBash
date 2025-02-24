@@ -93,7 +93,6 @@ const LobbyCreation = () => {
                             .update({ name: lobbyName }) 
                             .eq('lobby_code', lobbyCode) 
                             .select()
-
                         if (error) {
                             console.error('Error updating lobby name:', error);
                         }
