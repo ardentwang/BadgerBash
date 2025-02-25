@@ -17,48 +17,46 @@ const LobbyCreation = () => {
   const [lobbyCode, setLobbyCode] = useState('');
 
   useEffect(() => {
-    const getLobbyCodes = async () => {
-      const { data } = await supabase
+    const setupLobby = async () => {
+      try {
+        const { data: lobbiesData } = await supabase
           .from('lobbies')
           .select('lobby_code');
-      console.log("Raw data:", data);
-      return data?.map(lobby => lobby.lobby_code) || [];
-    }
-
-    const generateUniqueCode = async () => {
-        const existingCodes = await getLobbyCodes();
+        
+        const existingCodes = lobbiesData?.map(lobby => lobby.lobby_code) || [];
+        
         let code;
         do {
-            const firstPart = Math.floor(100 + Math.random() * 900).toString();
-            const secondPart = Math.floor(100 + Math.random() * 900).toString();
-            code = firstPart + secondPart;
-        } while (existingCodes.includes(code));
-
+          const firstPart = Math.floor(100 + Math.random() * 900).toString();
+          const secondPart = Math.floor(100 + Math.random() * 900).toString();
+          code = firstPart + secondPart;
+        } while (existingCodes.includes(parseInt(code)));
+        
+        const { error } = await supabase
+          .from('lobbies')
+          .insert([
+            { 
+              name: 'New Lobby', 
+              player_count: 1, 
+              is_public: false, 
+              lobby_code: parseInt(code)
+            }
+          ])
+          .select();
+        
+        if (error) {
+          console.error('Error creating lobby:', error);
+          return;
+        }
+        
         setLobbyCode(code);
+      } catch (err) {
+        console.error('Error in lobby creation process:', err);
+      }
     };
-
-    generateUniqueCode();
-  }, []);
-
-  useEffect(() => {
-    const generateLobby = async() => {
-      const { error } = await supabase
-        .from('lobbies')
-        .insert([
-          { 
-            name: 'lobbyName', 
-            player_count: 1, 
-            is_public: false, 
-            lobby_code: parseInt(lobbyCode)
-          }
-        ])
-        .select()
-
-      if (error) console.error('Error creating lobby:', error);
-    }
-
-    generateLobby();
-  }, [lobbyCode]);
+    
+    setupLobby();
+  }, []); 
 
   //POSSIBLE BOT IMPLEMENTATION?!??!?!?
   // React.FC will make it so the typing of the argument is ignored - remember to either adjust or delete when adding future implementation :3
