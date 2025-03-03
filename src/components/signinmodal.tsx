@@ -58,7 +58,9 @@ const SignInModal: FC<SignInModalProps> = ({ isOpen, onClose }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+            //SHOULD BE window.location.origin/auth/callback! 
+            // I just need it redirected back to the Homepage for testing reasons, but here is where we should process user metadata ideally
+          redirectTo: `${window.location.origin}/`
         }
       })
       
