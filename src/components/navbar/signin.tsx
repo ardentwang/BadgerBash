@@ -1,22 +1,36 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { FC } from "react"
 import { Button } from "../ui/button"
+import SignInModal from "../signinmodal"
 
-const SignIn = () => {
-    const [loading, setLoading] = useState(false)
+const SignIn: FC = () => {
+    const [loading] = useState(false)
+    const [isModalOpen, setIsModalOpen] = useState(false)
 
-    useEffect(() =>{
-        
-    })
+    const openModal = () => {
+        setIsModalOpen(true)
+    }
+
+    const closeModal = () => {
+        setIsModalOpen(false)
+    }
 
     return (
         <div>
             <Button 
                 variant="default" 
                 size="default"
+                onClick={openModal}
+                disabled={loading}
             >
-                Sign In
+                {loading ? "Loading..." : "Sign In"}
             </Button>
+            
+            <SignInModal 
+                isOpen={isModalOpen} 
+                onClose={closeModal} 
+            />
         </div>
     )
 }
