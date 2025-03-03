@@ -15,7 +15,7 @@ export default function AuthTest() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'http://localhost:3000'
+        redirectTo: 'http://localhost:3000/join-lobby'
       }
     });
   }

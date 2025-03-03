@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
+import NavBar from '@/components/navbar/navbar'
 
 export default function Home() {
   return (
     <div className="bg-background min-h-screen col-span-full relative">
+      <NavBar/>
       <div className="flex flex-col justify-center items-center min-h-screen">
         <div className="text-7xl mb-5">
           Badger Bash

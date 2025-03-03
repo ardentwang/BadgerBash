@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Pixelify_Sans } from 'next/font/google'
-import MusicPlayer from "@/components/musicplayer";
 
 const pixelifySans = Pixelify_Sans({
   subsets: ['latin'],
@@ -23,8 +22,6 @@ export default function RootLayout({
       <body
         className={`${pixelifySans.className}`}
       >
-        
-        <MusicPlayer />
         {children}
       </body>
     </html>
