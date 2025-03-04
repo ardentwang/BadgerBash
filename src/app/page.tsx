@@ -17,6 +17,7 @@ export default function Home() {
         </div>
         <div className='w-48'>
           <Button className="w-full text-md" size="lg" asChild>
+            {/** This needs to be changed to a responsive button called CreateGameLobby */}
             <Link href="/create-lobby">Create Game Lobby</Link>
           </Button>
         </div>
