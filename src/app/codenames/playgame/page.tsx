@@ -70,6 +70,18 @@ const CodenamesGame = () => {
     }
   };
 
+  const [flippedTiles, setFlippedTiles] = useState<boolean[]>(
+    initialWords.map((tile) => (role === "spymaster" ? true : false))
+  );
+
+  const handleTileClick = (index: number) => {
+    if (role === "spymaster") return; // Prevent spymaster from flipping tiles
+  
+    setFlippedTiles((prev) =>
+      prev.map((flipped, i) => (i === index ? !flipped : flipped))
+    );
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-red-400 p-6">
       {/*header*/}
@@ -89,16 +101,28 @@ const CodenamesGame = () => {
 
         {/*game board*/}
         <div className="grid grid-cols-5 gap-2 bg-orange-900 p-4 rounded-lg">
-          {initialWords.map((tile, index) => (
-            <div
-              key={index}
-              className={`flex items-center justify-center w-28 h-16 rounded-md font-bold 
-                ${getTileClass(tile.color)}
-              `}
-            >
-              {tile.word}
-            </div>
-          ))}
+        {initialWords.map((tile, index) => (
+  <div
+    key={index}
+    className={`relative w-28 h-16 rounded-md font-bold cursor-pointer transform transition-transform duration-500
+      ${flippedTiles[index] ? "rotate-y-180" : ""}
+    `}
+    onClick={() => handleTileClick(index)}
+  >
+    <div className="absolute w-full h-full flex items-center justify-center bg-gray-400 text-black backface-hidden">
+      {tile.word} {/* Always show the word */}
+    </div>
+    {flippedTiles[index] && (
+    <div
+      className={`absolute w-full h-full flex items-center justify-center rounded-md text-white backface-hidden rotate-y-180
+        ${getTileClass(tile.color)}
+      `}
+    >
+      {tile.word}
+    </div>
+     )}
+  </div>
+))}
         </div>
 
         {/*right player panel*/}
