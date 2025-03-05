@@ -53,13 +53,17 @@ const CodenamesGame = () => {
 
   //decide how to color each tile based on role
   const getTileClass = (color: string) => {
-    //if user is operative (NOT spymaster), always show gray
-    if (role !== "spymaster") {
-      return "bg-gray-200 text-black";
-    }
+    //if user is operative, always show gray
+
+    // if (role !== "spymaster") {
+    //   return "bg-gray-200 text-black";
+    // }
+    //if user is operative and the tile has been flipped, show true colr
+    
     //if user is spymaster, show the true color
     switch (color) {
       case "blue":
+        //console.log("BLUE CASE");
         return "bg-blue-500 text-white";
       case "red":
         return "bg-red-500 text-white";
