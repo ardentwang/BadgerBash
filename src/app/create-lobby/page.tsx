@@ -7,6 +7,7 @@ import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import {supabase} from "@/lib/supabase"
+import { useRouter } from "next/navigation";
 
 interface PlayerSlotProps {
   number: number;
@@ -15,6 +16,7 @@ interface PlayerSlotProps {
 const LobbyCreation = () => {
   const [lobbyName, setLobbyName] = useState('New Lobby');
   const [lobbyCode, setLobbyCode] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     const setupLobby = async () => {
@@ -50,6 +52,7 @@ const LobbyCreation = () => {
         }
         
         setLobbyCode(code);
+        router.push(`/lobby/${code}`);
       } catch (err) {
         console.error('Error in lobby creation process:', err);
       }
@@ -66,62 +69,7 @@ const LobbyCreation = () => {
     </div>
   );
 
-  return (
-    <div>
-        <Button className="absolute mt-5 ml-5" variant="outline" size="icon" asChild>
-            <Link href="/">
-                <ChevronLeft />
-            </Link>
-        </Button>
-        <div className="min-h-screen w-full flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
-            <CardHeader className="space-y-4">
-              <div className="space-y-2">
-                  <label htmlFor="lobbyName" className="text-sm font-medium">
-                  Lobby Name
-                  </label>
-                  <Input
-                    id="lobbyName"
-                    value={lobbyName}
-                    onChange={(e) => setLobbyName(e.target.value)}
-                    onBlur={async () => {
-                        // update backend when user finishes editing
-                        const { error } = await supabase
-                            .from('lobbies')
-                            .update({ name: lobbyName }) 
-                            .eq('lobby_code', lobbyCode) 
-                            .select()
-                        if (error) {
-                            console.error('Error updating lobby name:', error);
-                        }
-                    }}
-                    className="text-lg font-semibold"
-                  />
-            </div>
-            <div className="space-y-2">
-                <label className="text-sm font-medium">Lobby Code</label>
-                <div className="bg-secondary p-3 rounded-lg">
-                <p className="text-center font-mono text-2xl tracking-wider">
-                    {lobbyCode}
-                </p>
-                </div>
-            </div>
-            </CardHeader>
-            <CardContent>
-            <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Players</h3>
-                <div className="grid grid-cols-2 gap-4">
-                <PlayerSlot number={1} />
-                <PlayerSlot number={2} />
-                <PlayerSlot number={3} />
-                <PlayerSlot number={4} />
-                </div>
-            </div>
-            </CardContent>
-        </Card>
-        </div>
-    </div>
-  );
+  return null;
 };
 
 export default LobbyCreation;
