@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation"; // <-- 1) Import this hook
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
 
-//we will need to implement similarity score for the words
+// Words and their respective colors (blue, red, neutral, or black)
 const initialWords = [
   { word: "COPPER", color: "blue" },
   { word: "RING", color: "blue" },
@@ -35,15 +36,67 @@ const initialWords = [
   { word: "CHINA", color: "neutral" },
 ];
 
+const logEvent = async (event: string, details = {}) => {
+  console.log("Logging event:", event, details); // Debugging
+
+  const res = await fetch("/api/events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      event,
+      gameId: "your-game-id",
+      playerId: "your-player-id",
+      details,
+    }),
+  });
+
+  const data = await res.json();
+  console.log("Event response:", data);
+};
+
+const EventListener = () => {
+  const [events, setEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const subscription = supabase
+      .channel("game_events")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "game_events" },
+        (payload) => {
+          console.log("New event:", payload.new);
+          setEvents((prev) => [payload.new, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
+  return (
+    <div className="p-4 bg-gray-900 text-white rounded-lg">
+      <h3 className="text-lg font-bold">Game Events</h3>
+      <ul className="mt-2 space-y-1">
+        {events.map((event, index) => (
+          <li key={index} className="text-sm">
+            {event.event} - {JSON.stringify(event.details)}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
 const CodenamesGame = () => {
-  //access role
   const searchParams = useSearchParams();
   const role = searchParams.get("role"); // either "spymaster" or "operative"
 
   const [clue, setClue] = useState("");
   const [gameLog, setGameLog] = useState<string[]>([]);
 
-  //function to submit clue
+  // Submit clue function
   const submitClue = () => {
     if (clue.trim() !== "") {
       setGameLog((prevLog) => [`Clue: ${clue}`, ...prevLog]);
@@ -51,13 +104,32 @@ const CodenamesGame = () => {
     }
   };
 
-  //decide how to color each tile based on role
+  // Function to log events
+  const logEvent = async (event: string, details = {}) => {
+    await fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event,
+        gameId: "your-game-id",
+        playerId: "your-player-id",
+        details,
+      }),
+    });
+  };
+
+  // Call when a player selects a word
+  const handleWordSelection = (word: string) => {
+    logEvent("word-selected", { word, success: true });
+  };
+
+  // Decide how to color each tile based on role
   const getTileClass = (color: string) => {
-    //if user is operative (NOT spymaster), always show gray
+    // If user is operative (NOT spymaster), always show gray
     if (role !== "spymaster") {
       return "bg-gray-200 text-black";
     }
-    //if user is spymaster, show the true color
+    // If user is spymaster, show the true color
     switch (color) {
       case "blue":
         return "bg-blue-500 text-white";
@@ -72,22 +144,23 @@ const CodenamesGame = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-red-400 p-6">
-      {/*header*/}
+      {/* Header */}
       <h2 className="text-center text-white text-2xl font-bold mb-4">
-        {role === "spymaster"
-          ? "Give your operatives a clue."
-          : "Guess the words!"}
+        {role === "spymaster" ? "Give your operatives a clue." : "Guess the words!"}
       </h2>
 
+      {/* Real-time Event Listener */}
+      <EventListener />
+
       <div className="flex justify-center space-x-6">
-        {/*left player panel */}
+        {/* Left Player Panel */}
         <Card className="w-56 p-4 bg-red-700 text-white rounded-lg">
           <h3 className="text-xl font-bold">6</h3>
           <p>You</p>
           <Button className="w-full bg-yellow-400 text-black font-bold mt-2">Join</Button>
         </Card>
 
-        {/*game board*/}
+        {/* Game Board */}
         <div className="grid grid-cols-5 gap-2 bg-orange-900 p-4 rounded-lg">
           {initialWords.map((tile, index) => (
             <div
@@ -95,13 +168,14 @@ const CodenamesGame = () => {
               className={`flex items-center justify-center w-28 h-16 rounded-md font-bold 
                 ${getTileClass(tile.color)}
               `}
+              onClick={() => handleWordSelection(tile.word)}
             >
               {tile.word}
             </div>
           ))}
         </div>
 
-        {/*right player panel*/}
+        {/* Right Player Panel */}
         <Card className="w-56 p-4 bg-blue-700 text-white rounded-lg">
           <h3 className="text-xl font-bold">6</h3>
           <p>Me</p>
@@ -109,8 +183,8 @@ const CodenamesGame = () => {
         </Card>
       </div>
 
-      {/*spymaster submits clue*/}
-      {/* (operatives can also see this, but you can conditionally hide if you want) */}
+      {/* Spymaster submits clue */}
+      {/* Operatives can also see this, but you can conditionally hide if you want */}
       <div className="mt-4 flex justify-center items-center">
         <Input
           type="text"
@@ -124,7 +198,7 @@ const CodenamesGame = () => {
         </Button>
       </div>
 
-      {/*game log */}
+      {/* Game log */}
       <Card className="w-64 mt-6 p-4 bg-gray-200 text-black rounded-lg mx-auto">
         <h3 className="text-lg font-bold">Game Log</h3>
         <div className="text-sm text-gray-600">
