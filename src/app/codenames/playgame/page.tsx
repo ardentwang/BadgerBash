@@ -1,5 +1,6 @@
 "use client";
 
+
 import React, { useState } from "react";
 import { useSearchParams } from "next/navigation"; // <-- 1) Import this hook
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,9 @@ const CodenamesGame = () => {
 
   const [clue, setClue] = useState("");
   const [gameLog, setGameLog] = useState<string[]>([]);
+  
+
+  
 
   //function to submit clue
   const submitClue = () => {
@@ -58,7 +62,7 @@ const CodenamesGame = () => {
     // if (role !== "spymaster") {
     //   return "bg-gray-200 text-black";
     // }
-    //if user is operative and the tile has been flipped, show true colr
+    //if user is operative and the tile has been flipped, show true color
     
     //if user is spymaster, show the true color
     switch (color) {
@@ -84,6 +88,12 @@ const CodenamesGame = () => {
     setFlippedTiles((prev) =>
       prev.map((flipped, i) => (i === index ? !flipped : flipped))
     );
+
+    const tileColor = initialWords[index].color;
+    if (tileColor === "black") {
+      window.location.href = '/loose-game';
+      return;
+    }
   };
 
   return (
