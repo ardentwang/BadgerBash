@@ -1,13 +1,12 @@
 "use client";
 
-
-import React, { useState } from "react";
-import { useSearchParams } from "next/navigation"; // <-- 1) Import this hook
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation"; 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
 
-//we will need to implement similarity score for the words
 const initialWords = [
   { word: "COPPER", color: "blue" },
   { word: "RING", color: "blue" },
@@ -37,17 +36,59 @@ const initialWords = [
 ];
 
 const CodenamesGame = () => {
-  //access role
   const searchParams = useSearchParams();
-  const role = searchParams.get("role"); // either "spymaster" or "operative"
-
+  const role = searchParams ? searchParams.get("role") : null; 
   const [clue, setClue] = useState("");
   const [gameLog, setGameLog] = useState<string[]>([]);
-  
+  const [flippedTiles, setFlippedTiles] = useState<boolean[]>(
+    initialWords.map((tile) => (role === "spymaster" ? true : false))
+  );
 
-  
+  // 🔹 Replace with actual dynamic game & player IDs from your state/context
+  const gameId = "d488f102-3403-41f2-9c20-7bc94e97be7d"; 
+  const playerId = "d6c2e79f-4c14-4ca0-91f9-968fabd031e3";
 
-  //function to submit clue
+  // 🔹 Function to log moves to Supabase
+  const logMoveToSupabase = async (word: string, wordIndex: number) => {
+    const { error } = await supabase.from("game_events").insert([
+      {
+        game_id: gameId,
+        player_id: playerId,
+        word: word,
+        word_index: wordIndex,
+        event: "word_selected",
+        details: {},
+      },
+    ]);
+
+    if (error) {
+      console.error("❌ Error logging move:", error);
+    } else {
+      console.log("✅ Move logged successfully!");
+    }
+  };
+
+  // 🔹 Handle word selection & move logging
+  const handleTileClick = async (index: number) => {
+    if (role === "spymaster") return;
+
+    setFlippedTiles((prev) =>
+      prev.map((flipped, i) => (i === index ? !flipped : flipped))
+    );
+
+    const selectedWord = initialWords[index].word;
+    const selectedColor = initialWords[index].color;
+
+    setGameLog((prevLog) => [`${selectedWord} selected!`, ...prevLog]);
+
+    await logMoveToSupabase(selectedWord, index);
+
+    if (selectedColor === "black") {
+      window.location.href = "/lose-game";
+    }
+  };
+
+  // 🔹 Function to submit a clue
   const submitClue = () => {
     if (clue.trim() !== "") {
       setGameLog((prevLog) => [`Clue: ${clue}`, ...prevLog]);
@@ -55,100 +96,72 @@ const CodenamesGame = () => {
     }
   };
 
-  //decide how to color each tile based on role
+  // 🔹 Function to get the correct tile color
   const getTileClass = (color: string) => {
-    //if user is operative, always show gray
-
-    // if (role !== "spymaster") {
-    //   return "bg-gray-200 text-black";
-    // }
-    //if user is operative and the tile has been flipped, show true color
-    
-    //if user is spymaster, show the true color
     switch (color) {
       case "blue":
-        //console.log("BLUE CASE");
         return "bg-blue-500 text-white";
       case "red":
         return "bg-red-500 text-white";
       case "black":
         return "bg-black text-white";
-      default: // neutral
+      default:
         return "bg-gray-200 text-black";
-    }
-  };
-
-  const [flippedTiles, setFlippedTiles] = useState<boolean[]>(
-    initialWords.map((tile) => (role === "spymaster" ? true : false))
-  );
-
-  const handleTileClick = (index: number) => {
-    if (role === "spymaster") return; // Prevent spymaster from flipping tiles
-  
-    setFlippedTiles((prev) =>
-      prev.map((flipped, i) => (i === index ? !flipped : flipped))
-    );
-
-    const tileColor = initialWords[index].color;
-    if (tileColor === "black") {
-      window.location.href = '/loose-game';
-      return;
     }
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-red-400 p-6">
-      {/*header*/}
+      {/* Header */}
       <h2 className="text-center text-white text-2xl font-bold mb-4">
-        {role === "spymaster"
-          ? "Give your operatives a clue."
-          : "Guess the words!"}
+        {role === "spymaster" ? "Give your operatives a clue." : "Guess the words!"}
       </h2>
 
       <div className="flex justify-center space-x-6">
-        {/*left player panel */}
+        {/* Left Player Panel */}
         <Card className="w-56 p-4 bg-red-700 text-white rounded-lg">
           <h3 className="text-xl font-bold">6</h3>
           <p>You</p>
-          <Button className="w-full bg-yellow-400 text-black font-bold mt-2">Join</Button>
+          <Button className="w-full bg-yellow-400 text-black font-bold mt-2">
+            Join
+          </Button>
         </Card>
 
-        {/*game board*/}
+        {/* Game Board */}
         <div className="grid grid-cols-5 gap-2 bg-orange-900 p-4 rounded-lg">
-        {initialWords.map((tile, index) => (
-  <div
-    key={index}
-    className={`relative w-28 h-16 rounded-md font-bold cursor-pointer transform transition-transform duration-500
-      ${flippedTiles[index] ? "rotate-y-180" : ""}
-    `}
-    onClick={() => handleTileClick(index)}
-  >
-    <div className="absolute w-full h-full flex items-center justify-center bg-gray-400 text-black backface-hidden">
-      {tile.word} {/* Always show the word */}
-    </div>
-    {flippedTiles[index] && (
-    <div
-      className={`absolute w-full h-full flex items-center justify-center rounded-md text-white backface-hidden rotate-y-180
-        ${getTileClass(tile.color)}
-      `}
-    >
-      {tile.word}
-    </div>
-     )}
-  </div>
-))}
+          {initialWords.map((tile, index) => (
+            <div
+              key={index}
+              className={`relative w-28 h-16 rounded-md font-bold cursor-pointer transform transition-transform duration-500 ${
+                flippedTiles[index] ? "rotate-y-180" : ""
+              }`}
+              onClick={() => handleTileClick(index)}
+            >
+              <div className="absolute w-full h-full flex items-center justify-center bg-gray-400 text-black backface-hidden">
+                {tile.word}
+              </div>
+              {flippedTiles[index] && (
+                <div
+                  className={`absolute w-full h-full flex items-center justify-center rounded-md text-white backface-hidden rotate-y-180 ${getTileClass(tile.color)}`}
+                >
+                  {tile.word}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
 
-        {/*right player panel*/}
+        {/* Right Player Panel */}
         <Card className="w-56 p-4 bg-blue-700 text-white rounded-lg">
           <h3 className="text-xl font-bold">6</h3>
           <p>Me</p>
-          <Button className="w-full bg-yellow-400 text-black font-bold mt-2">Join</Button>
+          <Button className="w-full bg-yellow-400 text-black font-bold mt-2">
+            Join
+          </Button>
         </Card>
       </div>
 
-      {/*spymaster submits clue*/}
-      {/* (operatives can also see this, but you can conditionally hide if you want) */}
+      {/* Clue Submission */}
       <div className="mt-4 flex justify-center items-center">
         <Input
           type="text"
@@ -162,15 +175,11 @@ const CodenamesGame = () => {
         </Button>
       </div>
 
-      {/*game log */}
+      {/* Game Log */}
       <Card className="w-64 mt-6 p-4 bg-gray-200 text-black rounded-lg mx-auto">
         <h3 className="text-lg font-bold">Game Log</h3>
         <div className="text-sm text-gray-600">
-          {gameLog.length > 0 ? (
-            gameLog.map((log, index) => <p key={index}>{log}</p>)
-          ) : (
-            <p>-</p>
-          )}
+          {gameLog.length > 0 ? gameLog.map((log, index) => <p key={index}>{log}</p>) : <p>-</p>}
         </div>
       </Card>
     </div>
