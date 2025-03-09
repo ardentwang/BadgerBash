@@ -68,6 +68,7 @@ export default function LobbyPage({ params }: { params: { code: string } }) {
     return () => {
       supabase.removeChannel(channel);
     };
+    
   }, [code]);
 
   if (loading) return <p>Loading lobby...</p>;
