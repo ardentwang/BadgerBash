@@ -7,12 +7,15 @@ import { ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import {supabase} from "@/lib/supabase"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+
 
 interface PlayerSlotProps {
   number: number;
 }
 
 const LobbyCreation = () => {
+
   const [lobbyName, setLobbyName] = useState('New Lobby');
   const [lobbyCode, setLobbyCode] = useState('');
 
@@ -60,11 +63,30 @@ const LobbyCreation = () => {
 
   //POSSIBLE BOT IMPLEMENTATION?!??!?!?
   // React.FC will make it so the typing of the argument is ignored - remember to either adjust or delete when adding future implementation :3
-  const PlayerSlot: React.FC<PlayerSlotProps> = ({ number }) => (
-    <div className="flex items-center justify-center w-full h-24 bg-secondary rounded-lg border-2 border-border">
-      <p className="text-muted-foreground">Player {number}</p>
-    </div>
-  );
+  const PlayerSlot: React.FC<PlayerSlotProps> = ({ number }) => {
+    // Local avatar image paths
+    const avatarUrls = [
+      "/avatars/programmer.png",
+      "/avatars/student.png",
+      "/avatars/wizard.png",
+      "/avatars/party.png",
+    ];
+    return (
+      <div className="flex flex-col items-center justify-center w-full h-32 border-2 bg-teal-400 border-black p-4 
+              rounded-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-lg">
+        <Avatar className="w-16 h-16 border-2 border-black bg-white p-1">
+  <AvatarImage src={avatarUrls[number - 1]} alt={`User ${number}`} className="rounded-full" />
+  <AvatarFallback>P{number}</AvatarFallback>
+</Avatar>
+
+        <p className="text-lg font-semibold text-black mt-2">User {number}</p>
+      </div>
+    );
+  };
+  
+  
+  
+  
 
   return (
     <div>
