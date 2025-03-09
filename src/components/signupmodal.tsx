@@ -31,9 +31,14 @@ const SignInModal: FC<SignInModalProps> = ({ isOpen, onClose }) => {
     setError(null)
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+        options: {
+            data: {
+              avatar: '/public/avatars/student.png',
+            },
+          },
       })
       
       if (error) {
@@ -41,10 +46,10 @@ const SignInModal: FC<SignInModalProps> = ({ isOpen, onClose }) => {
         throw error
       }
       
-      console.log("Successfully signed in:", data)
+      console.log("Successfully signed up:", data)
       onClose()
     } catch (error) {
-      console.error("Sign in error:", error)
+      console.error("Sign up error:", error)
     } finally {
       setIsLoading(false)
     }
@@ -70,9 +75,9 @@ const SignInModal: FC<SignInModalProps> = ({ isOpen, onClose }) => {
       }
       
       // auth is handled by redirect, so no need to call onClose(), this is supabase specific, and with our planned future iterations of different forms of sign-in
-      console.log("Google sign-in initiated", data)
+      console.log("Google sign-up initiated", data)
     } catch (error) {
-      console.error("Failed to sign in with Google", error)
+      console.error("Failed to sign up with Google", error)
     } finally {
       setIsLoading(false)
     }
@@ -82,9 +87,9 @@ const SignInModal: FC<SignInModalProps> = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Sign In</DialogTitle>
+          <DialogTitle>Sign Up</DialogTitle>
           <DialogDescription>
-            Enter your credentials to access your account.
+            Create an account to customize your profile!
           </DialogDescription>
         </DialogHeader>
 
@@ -169,7 +174,7 @@ const SignInModal: FC<SignInModalProps> = ({ isOpen, onClose }) => {
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? "Creating..." : "Sign Up"}
               </Button>
             </DialogFooter>
           </form>
