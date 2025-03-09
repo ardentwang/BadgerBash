@@ -1,4 +1,4 @@
-"use client"
+"use client" // client-side rendering
 import {
     InputOTP,
     InputOTPGroup,
@@ -18,25 +18,50 @@ import LobbyCard from "@/components/lobbycard"
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 
+/**
+ * Interface representing the structure of a Lobby
+ */
 interface Lobby {
-    lobby_id: string;
-    name: string;
-    player_count: number;
-    isPublic: boolean;
+    lobby_id: string; // Unique identifier for the lobby
+    name: string; // Lobby name
+    player_count: number; // Number of players currently in the lobby
+    isPublic: boolean; // Indicates whether the lobby is public or private
 }
 
+/**
+ * JoinLobby Component
+ *
+ * This component fetches and displays a list of lobbies from the database.
+ * It provides two tabs: one for public lobbies and one for private lobbies.
+ * Public lobbies are displayed using the LobbyCard component, while private
+ * lobbies require the user to input a 6-digit code to join.
+ */
 export default function JoinLobby () {
-    const [lobbies, setLobbies] = useState<Lobby[]>([])
+    const [lobbies, setLobbies] = useState<Lobby[]>([]) // State to store the list of lobbies fetched from the database
+    
+    /**
+   * useEffect: Fetch Lobbies from the Database
+   *
+   * On component mount,  useEffect retrieves all lobby records from the 'lobbies' table
+   * using the Supabase client and updates the component state.
+   */
     useEffect(() => {
         async function getLobbies() {
             const { data } = await supabase.from('lobbies').select('*');
             console.log("Fetched data: ", data);
-            setLobbies(data || []);
+            setLobbies(data || []); // Update state with fetched lobby data, or set to empty array if no data exists
         }
-        getLobbies()
+        getLobbies() // Call the function to fetch lobbies
     }, [])
 
-
+    /**
+   * Render the JoinLobby component UI.
+   *
+   * - A back button (using ChevronLeft) navigates to the home page.
+   * - A centered Tabs component allows switching between Public and Private lobbies.
+   *   - Public lobbies are rendered using the LobbyCard component.
+   *   - Private lobbies display an OTP input for a 6-digit lobby code.
+   */
     return(
         <div>
             <Button className="absolute mt-5 ml-5" variant="outline" size="icon" asChild>
