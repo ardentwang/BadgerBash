@@ -140,16 +140,22 @@ export default function LobbyPage() {
           table: 'players',
           filter: `lobby_code=eq.${code}`
         }, (payload) => {
-          console.log('Players updated:', payload)
+          console.log('Players updated:', payload);
+          
           if (payload.eventType === 'INSERT') {
-            setPlayers(prev => [...prev, payload.new])
+            setPlayers(prev => [...prev, payload.new]);
           } else if (payload.eventType === 'DELETE') {
-            setPlayers(prev => prev.filter(p => p.id !== payload.old.id))
+            // Log more information to help debug
+            console.log('Player deleted:', payload.old);
+            console.log('Current players before filter:', players);
+            
+            // Make sure we're using the user_id for filtering, not just the id
+            setPlayers(prev => prev.filter(p => p.id !== payload.old.id));
           } else if (payload.eventType === 'UPDATE') {
-            setPlayers(prev => prev.map(p => p.id === payload.new.id ? payload.new : p))
+            setPlayers(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
           }
         })
-        .subscribe()
+        .subscribe();
       
       // Store subscription references for cleanup
       setSubscriptions({
@@ -377,81 +383,113 @@ async function addPlayerToLobby(lobbyCode:any, user:any) {
   }
 }
 
-// Function to remove a player from the lobby
 async function removePlayerFromLobby(lobbyCode:any, userId:any) {
-  // Get the player to check if they're the host
-  const { data: player } = await supabase
-    .from('players')
-    .select('*')
-    .eq('lobby_code', lobbyCode)
-    .eq('user_id', userId)
-    .single()
-  
-  if (!player) {
-    console.log('Player not found in lobby')
-    return
-  }
-  
-  // Remove the player
-  const { error: removeError } = await supabase
-    .from('players')
-    .delete()
-    .eq('lobby_code', lobbyCode)
-    .eq('user_id', userId)
-  
-  if (removeError) {
-    console.error('Error removing player from lobby:', removeError)
-    throw removeError
-  }
-  
-  // Update the player count
-  const { data: lobbyData } = await supabase
-    .from('lobbies')
-    .select('player_count')
-    .eq('lobby_code', lobbyCode)
-    .single()
-  
-  const newPlayerCount = Math.max((lobbyData?.player_count || 1) - 1, 0)
-  
-  const { error: updateError } = await supabase
-    .from('lobbies')
-    .update({ player_count: newPlayerCount })
-    .eq('lobby_code', lobbyCode)
-  
-  if (updateError) {
-    console.error('Error updating lobby player count:', updateError)
-  }
-  
-  // If the player was the host and there are other players, assign a new host
-  if (player.is_host && newPlayerCount > 0) {
-    const { data: remainingPlayers } = await supabase
+  try {
+    // Get the player to check if they're the host
+    const { data: player, error: playerError } = await supabase
       .from('players')
       .select('*')
       .eq('lobby_code', lobbyCode)
-      .order('joined_at', { ascending: true })
-      .limit(1)
+      .eq('user_id', userId)
+      .single();
     
-    if (remainingPlayers && remainingPlayers.length > 0) {
-      const { error: hostError } = await supabase
-        .from('players')
-        .update({ is_host: true })
-        .eq('id', remainingPlayers[0].id)
-      
-      if (hostError) {
-        console.error('Error assigning new host:', hostError)
-      }
+    if (playerError || !player) {
+      console.log('Player not found in lobby or error:', playerError);
+      return;
     }
-  }
-  
-  // If no players left, delete the lobby
-  if (newPlayerCount === 0) {
-    const { error: deleteLobbyError } = await supabase
-      .from('lobbies')
+    
+    // Remove the player
+    const { error: removeError } = await supabase
+      .from('players')
       .delete()
       .eq('lobby_code', lobbyCode)
+      .eq('user_id', userId);
     
-    if (deleteLobbyError) {
-      console.error('Error removing empty lobby:', deleteLobbyError)
+    if (removeError) {
+      console.error('Error removing player from lobby:', removeError);
+      throw removeError;
     }
+    
+    console.log('Player successfully removed');
+    
+    // Get updated player count
+    const { data: lobbyData, error: lobbyError } = await supabase
+      .from('lobbies')
+      .select('player_count')
+      .eq('lobby_code', lobbyCode)
+      .single();
+    
+    if (lobbyError) {
+      console.error('Error getting lobby data:', lobbyError);
+      return;
+    }
+    
+    const newPlayerCount = Math.max((lobbyData?.player_count || 1) - 1, 0);
+    console.log('New player count will be:', newPlayerCount);
+    
+    // Update the player count
+    const { error: updateError } = await supabase
+      .from('lobbies')
+      .update({ player_count: newPlayerCount })
+      .eq('lobby_code', lobbyCode);
+    
+    if (updateError) {
+      console.error('Error updating lobby player count:', updateError);
+    }
+    
+    // If the player was the host and there are other players, assign a new host
+    if (player.is_host && newPlayerCount > 0) {
+      const { data: remainingPlayers, error: remainingError } = await supabase
+        .from('players')
+        .select('*')
+        .eq('lobby_code', lobbyCode)
+        .order('joined_at', { ascending: true })
+        .limit(1);
+      
+      if (remainingError) {
+        console.error('Error finding remaining players:', remainingError);
+      } else if (remainingPlayers && remainingPlayers.length > 0) {
+        const { error: hostError } = await supabase
+          .from('players')
+          .update({ is_host: true })
+          .eq('id', remainingPlayers[0].id);
+        
+        if (hostError) {
+          console.error('Error assigning new host:', hostError);
+        } else {
+          console.log('New host assigned:', remainingPlayers[0].name);
+        }
+      }
+    }
+    
+    // Check if this was the last player and delete the lobby if so
+    if (newPlayerCount === 0) {
+      console.log('Last player left, deleting lobby:', lobbyCode);
+      
+      const { error: checkPlayersError, count } = await supabase
+        .from('players')
+        .select('*', { count: 'exact', head: true })
+        .eq('lobby_code', lobbyCode);
+      
+      if (checkPlayersError) {
+        console.error('Error checking remaining players:', checkPlayersError);
+      } else if (count === 0) {
+        // Double-check that there are really no players left
+        const { error: deleteLobbyError } = await supabase
+          .from('lobbies')
+          .delete()
+          .eq('lobby_code', lobbyCode);
+        
+        if (deleteLobbyError) {
+          console.error('Error removing empty lobby:', deleteLobbyError);
+        } else {
+          console.log('Lobby successfully deleted');
+        }
+      } else {
+        console.log('Found', count, 'players still in lobby, not deleting');
+      }
+    }
+  } catch (err) {
+    console.error('Overall error in removePlayerFromLobby:', err);
   }
 }

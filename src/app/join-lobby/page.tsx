@@ -25,11 +25,12 @@ export default function JoinLobby() {
     /* eslint-disable @typescript-eslint/no-explicit-any */
     const [lobbies, setLobbies] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [isJoining, setIsJoining] = useState(false)
     const [lobbyCode, setLobbyCode] = useState('')
     const [error, setError] = useState<string | null>(null)
     
     useEffect(() => {
-        // Fetch public lobbies
+        // Fetch lobbies
         const fetchLobbies = async () => {
             setIsLoading(true)
             setError(null)
@@ -38,8 +39,7 @@ export default function JoinLobby() {
                 const { data, error } = await supabase
                     .from('lobbies')
                     .select('*')
-                    .order('created_at', { ascending: false })
-                
+                    .order('created_at', { ascending: false });
                 if (error) {
                     throw error
                 }
@@ -61,9 +61,10 @@ export default function JoinLobby() {
             .on('postgres_changes', { 
                 event: '*', 
                 schema: 'public', 
-                table: 'lobbies',
-                filter: 'is_public=eq.true'
+                table: 'lobbies'
             }, (payload) => {
+                console.log('Lobby change detected:', payload)
+                
                 if (payload.eventType === 'INSERT') {
                     setLobbies(prev => [payload.new, ...prev])
                 } else if (payload.eventType === 'DELETE') {
@@ -89,7 +90,7 @@ export default function JoinLobby() {
             return
         }
         
-        setIsLoading(true)
+        setIsJoining(true)
         setError(null)
         
         try {
@@ -102,11 +103,13 @@ export default function JoinLobby() {
             
             if (error || !data) {
                 setError('Lobby not found')
+                setIsJoining(false)
                 return
             }
             
             if (data.player_count >= 4) {
                 setError('Lobby is full')
+                setIsJoining(false)
                 return
             }
             
@@ -116,8 +119,7 @@ export default function JoinLobby() {
         } catch (err) {
             console.error('Error joining with code:', err)
             setError('Failed to join lobby')
-        } finally {
-            setIsLoading(false)
+            setIsJoining(false)
         }
     }
     
@@ -130,19 +132,19 @@ export default function JoinLobby() {
             </Button>
             
             <div className="absolute mt-10 left-1/2 transform -translate-x-1/2 w-fit">
-                <Tabs defaultValue="public" className="w-full">
+                <Tabs defaultValue="available" className="w-full">
                     <TabsList>
-                        <TabsTrigger value="private">Private Lobbies</TabsTrigger>
-                        <TabsTrigger value="public">Public Lobbies</TabsTrigger>
+                        <TabsTrigger value="code">Join with Code</TabsTrigger>
+                        <TabsTrigger value="available">Available Lobbies</TabsTrigger>
                     </TabsList>
                     
-                    <TabsContent value="public" className="w-full">
+                    <TabsContent value="available" className="w-full">
                         <div className="w-full">
                             {isLoading ? (
                                 <div className="text-center py-8">Loading lobbies...</div>
                             ) : lobbies.length === 0 ? (
                                 <div className="text-center py-8 text-gray-500">
-                                    No public lobbies available. Create your own game!
+                                    No lobbies available. Create your own game!
                                 </div>
                             ) : (
                                 lobbies.map((lobby) => (
@@ -151,15 +153,14 @@ export default function JoinLobby() {
                                         lobby_code={lobby.lobby_code}
                                         name={lobby.name}
                                         player_count={lobby.player_count}
-                                        isPublic={lobby.is_public}
                                     />
                                 ))
                             )}
                         </div>
                     </TabsContent>
                     
-                    <TabsContent value="private" className="absolute flex flex-col">
-                        <div className="mb-5">Please enter the 6 digit code provided to the owner of the private lobby</div>
+                    <TabsContent value="code" className="absolute flex flex-col">
+                        <div className="mb-5">Please enter the 6 digit code to join a lobby</div>
                         
                         <InputOTP 
                             maxLength={6} 
@@ -181,6 +182,14 @@ export default function JoinLobby() {
                         </InputOTP>
                         
                         {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
+                        
+                        <Button 
+                            className="mt-4"
+                            onClick={() => handleJoinWithCode(lobbyCode)}
+                            disabled={isJoining || !lobbyCode || lobbyCode.length < 6}
+                        >
+                            {isJoining ? "Joining..." : "Join Lobby"}
+                        </Button>
                     </TabsContent>
                 </Tabs>
             </div>

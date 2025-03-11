@@ -15,9 +15,14 @@ export default function CreateLobby() {
     
     try {
       // Get existing lobby codes to avoid duplicates
-      const { data: lobbiesData } = await supabase
+      const { data: lobbiesData, error: fetchError } = await supabase
         .from('lobbies')
         .select('lobby_code');
+      
+      if (fetchError) {
+        console.error('Error fetching existing lobbies:', fetchError);
+        throw fetchError;
+      }
       
       const existingCodes = lobbiesData?.map(lobby => lobby.lobby_code) || [];
       
@@ -30,7 +35,7 @@ export default function CreateLobby() {
       } while (existingCodes.includes(parseInt(code)));
       
       // Create the lobby in the database
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('lobbies')
         .insert([
           { 
@@ -41,8 +46,8 @@ export default function CreateLobby() {
           }
         ]);
       
-      if (error) {
-        console.error('Error creating lobby:', error);
+      if (insertError) {
+        console.error('Error creating lobby:', insertError);
         return;
       }
       
