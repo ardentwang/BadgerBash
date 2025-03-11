@@ -44,11 +44,11 @@ const CodenamesGame = () => {
     initialWords.map((tile) => (role === "spymaster" ? true : false))
   );
 
-  // 🔹 Replace with actual dynamic game & player IDs from your state/context
+  // replace with actual dynamic game & player IDs from your state/context
   const gameId = "d488f102-3403-41f2-9c20-7bc94e97be7d"; 
   const playerId = "d6c2e79f-4c14-4ca0-91f9-968fabd031e3";
 
-  // 🔹 Function to log moves to Supabase
+  // log moves to Supabase
   const logMoveToSupabase = async (word: string, wordIndex: number) => {
     const { error } = await supabase.from("game_events").insert([
       {
@@ -62,13 +62,13 @@ const CodenamesGame = () => {
     ]);
 
     if (error) {
-      console.error("❌ Error logging move:", error);
+      console.error("Error logging move:", error);
     } else {
-      console.log("✅ Move logged successfully!");
+      console.log("Move logged successfully!");
     }
   };
 
-  // 🔹 Handle word selection & move logging
+  //handle word selection & move logging
   const handleTileClick = async (index: number) => {
     if (role === "spymaster") return;
 
@@ -88,7 +88,7 @@ const CodenamesGame = () => {
     }
   };
 
-  // 🔹 Function to submit a clue
+  // submit a clue
   const submitClue = () => {
     if (clue.trim() !== "") {
       setGameLog((prevLog) => [`Clue: ${clue}`, ...prevLog]);
@@ -96,7 +96,7 @@ const CodenamesGame = () => {
     }
   };
 
-  // 🔹 Function to get the correct tile color
+  // get the correct tile color
   const getTileClass = (color: string) => {
     switch (color) {
       case "blue":
@@ -112,13 +112,13 @@ const CodenamesGame = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-red-400 p-6">
-      {/* Header */}
+      {/* game header */}
       <h2 className="text-center text-white text-2xl font-bold mb-4">
         {role === "spymaster" ? "Give your operatives a clue." : "Guess the words!"}
       </h2>
 
       <div className="flex justify-center space-x-6">
-        {/* Left Player Panel */}
+        {/* left player panel */}
         <Card className="w-56 p-4 bg-red-700 text-white rounded-lg">
           <h3 className="text-xl font-bold">6</h3>
           <p>You</p>
@@ -127,7 +127,7 @@ const CodenamesGame = () => {
           </Button>
         </Card>
 
-        {/* Game Board */}
+        {/* game board */}
         <div className="grid grid-cols-5 gap-2 bg-orange-900 p-4 rounded-lg">
           {initialWords.map((tile, index) => (
             <div
@@ -151,7 +151,7 @@ const CodenamesGame = () => {
           ))}
         </div>
 
-        {/* Right Player Panel */}
+        {/* right player panel */}
         <Card className="w-56 p-4 bg-blue-700 text-white rounded-lg">
           <h3 className="text-xl font-bold">6</h3>
           <p>Me</p>
@@ -161,7 +161,7 @@ const CodenamesGame = () => {
         </Card>
       </div>
 
-      {/* Clue Submission */}
+      {/* clue submission */}
       <div className="mt-4 flex justify-center items-center">
         <Input
           type="text"
@@ -175,7 +175,7 @@ const CodenamesGame = () => {
         </Button>
       </div>
 
-      {/* Game Log */}
+      {/* game log*/}
       <Card className="w-64 mt-6 p-4 bg-gray-200 text-black rounded-lg mx-auto">
         <h3 className="text-lg font-bold">Game Log</h3>
         <div className="text-sm text-gray-600">
