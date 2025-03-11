@@ -193,12 +193,6 @@ export default function LobbyPage() {
       console.error('Error leaving lobby:', error)
     }
   }
-  
-  // Handle starting the game
-  const handleStartGame = () => {
-    // Logic to start the game goes here
-    alert('Game starting!')
-  }
 
   if (isLoading) {
     return (
@@ -290,14 +284,15 @@ export default function LobbyPage() {
               </div>
               
               <div className="flex gap-4 mt-6 pt-4 border-t">
-                {isHost && players.length >= 2 && (
-                  <Button 
+                <Button 
                     className="w-full" 
-                    onClick={handleStartGame}
+                    onClick={() => {
+                      // Navigate to the Codenames lobby
+                      router.push('/codenames/joingame');
+                    }}
                   >
                     Start Game
                   </Button>
-                )}
                 <Button 
                   variant="outline" 
                   className="w-full" 
