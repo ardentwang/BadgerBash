@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 
 export default function JoinLobbyPage() {
   const router = useRouter()
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   const [lobbies, setLobbies] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [lobbyCode, setLobbyCode] = useState('')
