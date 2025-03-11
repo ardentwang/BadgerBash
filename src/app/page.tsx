@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import NavBar from '@/components/navbar/navbar'
+import CreateLobby from "@/components/ui/create-lobby"
 
 export default function Home() {
   return (
@@ -16,10 +17,7 @@ export default function Home() {
           </Button>
         </div>
         <div className='w-48'>
-          <Button className="w-full text-md" size="lg" asChild>
-            {/** This needs to be changed to a responsive button called CreateGameLobby */}
-            <Link href="/create-lobby">Create Game Lobby</Link>
-          </Button>
+          <CreateLobby />
         </div>
       </div>
     </div>

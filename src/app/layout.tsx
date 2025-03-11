@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Pixelify_Sans } from 'next/font/google'
+import { AuthProvider } from '@/context/AuthContext';
 
 const pixelifySans = Pixelify_Sans({
   subsets: ['latin'],
@@ -22,7 +23,9 @@ export default function RootLayout({
       <body
         className={`${pixelifySans.className}`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
