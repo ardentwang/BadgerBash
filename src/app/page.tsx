@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import NavBar from '@/components/navbar/navbar'
 import CreateLobby from "@/components/ui/create-lobby"
 
+//
 export default function Home() {
   return (
     <div className="bg-background min-h-screen col-span-full relative">
