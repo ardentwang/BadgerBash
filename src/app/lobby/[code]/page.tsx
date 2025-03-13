@@ -75,6 +75,12 @@ export default function LobbyPage() {
         setLobby(lobbyData)
         setLobbyName(lobbyData.name || 'New Lobby')
         
+        // Check if game is already in progress and redirect if needed
+        if (lobbyData.game_started) {
+          router.push('/codenames/joingame')
+          return
+        }
+        
         // Get players in the lobby
         const { data: playersData, error: playersError } = await supabase
           .from('players')
@@ -90,18 +96,21 @@ export default function LobbyPage() {
         }
         
         setPlayers(playersData || [])
-        setIsLoading(false)
         
         // Add current user to lobby if not already present
         const existingPlayer = playersData?.find(p => p.user_id === user.id)
         if (!existingPlayer) {
           try {
-            await addPlayerToLobby(code, user)
+            // Check if this user is the creator/host (first player joining)
+            const isFirstPlayer = playersData.length === 0
+            await addPlayerToLobby(code, user, isFirstPlayer)
           } catch (err) {
             console.error('Error adding player to lobby:', err)
             // Continue - we'll still show the lobby even if joining fails
           }
         }
+        
+        setIsLoading(false)
       } catch (err) {
         console.error('Error in lobby initialization:', err)
         setError('Failed to initialize lobby')
@@ -122,8 +131,15 @@ export default function LobbyPage() {
         }, (payload) => {
           console.log('Lobby updated:', payload)
           if (payload.eventType === 'UPDATE') {
-            setLobby(payload.new)
-            setLobbyName(payload.new.name || 'New Lobby')
+            const updatedLobby = payload.new
+            setLobby(updatedLobby)
+            setLobbyName(updatedLobby.name || 'New Lobby')
+            
+            // Check if game has been started by the host
+            if (updatedLobby.game_started) {
+              console.log('Game started by host, redirecting to game')
+              router.push('/codenames/joingame')
+            }
           } else if (payload.eventType === 'DELETE') {
             // Lobby was deleted, redirect to home
             router.push('/')
@@ -191,6 +207,28 @@ export default function LobbyPage() {
       }
     } catch (error) {
       console.error('Error leaving lobby:', error)
+    }
+  }
+
+  // Handle starting the game (for host only)
+  const handleStartGame = async () => {
+    try {
+      if (isHost && lobby) {
+        // Update the lobby status to indicate game has started
+        const { error } = await supabase
+          .from('lobbies')
+          .update({ game_started: true })
+          .eq('lobby_code', code)
+        
+        if (error) {
+          console.error('Error starting game:', error)
+          return
+        }
+        
+        // Host will be redirected by the subscription listener just like other players
+      }
+    } catch (error) {
+      console.error('Error starting game:', error)
     }
   }
 
@@ -285,14 +323,12 @@ export default function LobbyPage() {
               
               <div className="flex gap-4 mt-6 pt-4 border-t">
                 <Button 
-                    className="w-full" 
-                    onClick={() => {
-                      // Navigate to the Codenames lobby
-                      router.push('/codenames/joingame');
-                    }}
-                  >
-                    Start Game
-                  </Button>
+                  className="w-full" 
+                  onClick={handleStartGame}
+                  disabled={!isHost}
+                >
+                  {isHost ? 'Start Game for Everyone' : 'Waiting for Host to Start'}
+                </Button>
                 <Button 
                   variant="outline" 
                   className="w-full" 
@@ -309,7 +345,7 @@ export default function LobbyPage() {
   )
 }
 
-async function addPlayerToLobby(lobbyCode:any, user:any) {
+async function addPlayerToLobby(lobbyCode:any, user:any, isHost = false) {
   try {
     // Convert lobby code to integer if it's a string
     const lobbyCodeInt = typeof lobbyCode === 'string' ? parseInt(lobbyCode) : lobbyCode;
@@ -323,7 +359,7 @@ async function addPlayerToLobby(lobbyCode:any, user:any) {
         user_id: user.id,
         name: user.user_metadata?.username || 'Guest',
         avatar_url: user.user_metadata?.avatar_url || '/avatars/student.png',
-        is_host: false, // We'll handle host assignment separately
+        is_host: isHost, // Set host status based on parameter
         joined_at: new Date().toISOString()
       }, {
         onConflict: 'lobby_code,user_id', // This specifies which columns form the unique constraint

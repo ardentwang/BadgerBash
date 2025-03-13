@@ -1,14 +1,58 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { User } from "lucide-react";
+import { supabase } from "@/lib/supabase"; // Ensure you import Supabase
 
 const CodenamesLobby = () => {
-  const [players] = useState(1);
+  const [players, setPlayers] = useState(1);
+  const [gameId, setGameId] = useState<string | null>(null); // Store game ID
   const router = useRouter();
+
+  // ✅ Fetch an existing game or create a new one
+  useEffect(() => {
+    const fetchGame = async () => {
+      const { data, error } = await supabase
+        .from("games")
+        .select("id")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        console.warn("No existing game found, creating a new one...");
+        const { data: newGame, error: newGameError } = await supabase
+          .from("games")
+          .insert([{ status: "waiting" }])
+          .select("id")
+          .single();
+
+        if (newGameError || !newGame) {
+          console.error("Error creating game:", newGameError);
+          return;
+        }
+        setGameId(newGame.id);
+      } else {
+        setGameId(data.id);
+      }
+    };
+
+    fetchGame();
+  }, []);
+
+  
+
+  // ✅ Prevent navigation if `gameId` is still loading
+  const navigateToGame = (role: string, team: string) => {
+    if (!gameId) {
+      console.warn("Game ID is still loading...");
+      return;
+    }
+    router.push(`/codenames/playgame?gameId=${gameId}&role=${role}&team=${team}`);
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-red-400">
@@ -35,7 +79,8 @@ const CodenamesLobby = () => {
           <p>-</p>
           <Button
             className="w-full bg-yellow-400 text-black font-bold mt-2"
-            onClick={() => router.push("/codenames/playgame?role=operative")}
+            onClick={() => navigateToGame("operative", "red")}
+            disabled={!gameId} // Prevent clicking if `gameId` is not ready
           >
             Join as Operative
           </Button>
@@ -44,7 +89,8 @@ const CodenamesLobby = () => {
           <p>-</p>
           <Button
             className="w-full bg-yellow-400 text-black font-bold mt-2"
-            onClick={() => router.push("/codenames/playgame?role=spymaster")}
+            onClick={() => navigateToGame("spymaster", "red")}
+            disabled={!gameId}
           >
             Join as Spymaster
           </Button>
@@ -73,7 +119,8 @@ const CodenamesLobby = () => {
           <p>-</p>
           <Button
             className="w-full bg-yellow-400 text-black font-bold mt-2"
-            onClick={() => router.push("/codenames/playgame?role=operative")}
+            onClick={() => navigateToGame("operative", "blue")}
+            disabled={!gameId}
           >
             Join as Operative
           </Button>
@@ -82,7 +129,8 @@ const CodenamesLobby = () => {
           <p>-</p>
           <Button
             className="w-full bg-yellow-400 text-black font-bold mt-2"
-            onClick={() => router.push("/codenames/playgame?role=spymaster")}
+            onClick={() => navigateToGame("spymaster", "blue")}
+            disabled={!gameId}
           >
             Join as Spymaster
           </Button>

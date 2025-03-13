@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useSearchParams } from "next/navigation"; 
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -19,7 +19,7 @@ const initialWords = [
   { word: "POINT", color: "red" },
   { word: "COMPOUND", color: "neutral" },
   { word: "OLIVE", color: "neutral" },
-  { word: "AIR", color: "black" }, // Assassin word
+  { word: "AIR", color: "black" },
   { word: "CYCLE", color: "neutral" },
   { word: "VET", color: "blue" },
   { word: "OLYMPUS", color: "blue" },
@@ -37,19 +37,114 @@ const initialWords = [
 
 const CodenamesGame = () => {
   const searchParams = useSearchParams();
-  const role = searchParams ? searchParams.get("role") : null; 
+  const gameId = searchParams.get("gameId");
+  const role = searchParams.get("role");
+  const team = searchParams.get("team");
+
+  const [playerId, setPlayerId] = useState<string | null>(null);
   const [clue, setClue] = useState("");
   const [gameLog, setGameLog] = useState<string[]>([]);
-  const [flippedTiles, setFlippedTiles] = useState<boolean[]>(
-    initialWords.map(() => (role === "spymaster" ? true : false))
-  );
+  const [flippedTiles, setFlippedTiles] = useState<boolean[]>(Array(initialWords.length).fill(false));
+  const [activeClueTeam, setActiveClueTeam] = useState<string | null>(null);
 
-  // replace with actual dynamic game & player IDs from your state/context
-  const gameId = "d488f102-3403-41f2-9c20-7bc94e97be7d"; 
-  const playerId = "d6c2e79f-4c14-4ca0-91f9-968fabd031e3";
+  useEffect(() => {
+    console.log("Retrieved Game ID:", gameId);
+    console.log("Role:", role);
+    console.log("Team:", team);
+  }, [searchParams]); 
 
-  // log moves to Supabase
+
+  useEffect(() => {
+    if (!gameId) return; // Ensure gameId exists before proceeding
+  
+    const fetchPlayerData = async () => {
+      console.log("Fetching player data...");
+  
+      // 🔹 Get the authenticated user from Supabase
+      const { data: authUser, error: authError } = await supabase.auth.getUser();
+      if (authError || !authUser?.user) {
+        console.error("User not authenticated:", authError);
+        return;
+      }
+  
+      const userId = authUser.user.id;
+  
+      // 🔹 Fetch lobby_code from the lobbies table
+      const { data: lobbyInfo, error: lobbyError } = await supabase
+        .from("lobbies")
+        .select("lobby_code")
+        .eq("id", gameId)
+        .maybeSingle();
+  
+      if (lobbyError) {
+        console.error("Error fetching lobby info:", lobbyError);
+        return;
+      }
+  
+      if (!lobbyInfo || !lobbyInfo.lobby_code) {
+        console.warn(`No valid lobby_code found for gameId: ${gameId}`);
+        return;
+      }
+  
+      let lobbyCode: string | number = lobbyInfo.lobby_code;
+      if (!isNaN(Number(lobbyCode))) {
+        lobbyCode = Number(lobbyCode); // Convert to number if necessary
+      }
+  
+      console.log("Lobby Code being used:", lobbyCode);
+  
+      // 🔹 Fetch player ID from `players` table using user_id and lobby_code
+      const { data: playerData, error: playerError } = await supabase
+        .from("players")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("lobby_code", lobbyCode)
+        .maybeSingle();
+  
+      if (playerError) {
+        console.error("Error fetching player:", playerError);
+        return;
+      }
+  
+      if (!playerData) {
+        console.warn("Player not found in lobby! Adding them...");
+        await addPlayerToGame(userId, String(lobbyCode));
+        return;
+      }
+  
+      console.log("Player ID:", playerData.id);
+      setPlayerId(playerData.id);
+    };
+  
+    fetchPlayerData();
+  }, [gameId]);
+  
+  
+  
+  
+
+  const addPlayerToGame = async (userId: string, gameId: string) => {
+    const { data, error } = await supabase
+      .from("players")
+      .insert([{ user_id: userId, lobby_code: gameId }])
+      .select("id")
+      .single();
+
+    if (error) {
+      console.error("Error adding player to game:", error);
+      return;
+    }
+
+    console.log("Player added to game:", data);
+    setPlayerId(data.id);
+  };
+
   const logMoveToSupabase = async (word: string, wordIndex: number) => {
+    if (!gameId || !playerId) {
+      console.error("Missing gameId or playerId");
+      return;
+    }
+
     const { error } = await supabase.from("game_events").insert([
       {
         game_id: gameId,
@@ -63,18 +158,24 @@ const CodenamesGame = () => {
 
     if (error) {
       console.error("Error logging move:", error);
-    } else {
-      console.log("Move logged successfully!");
     }
   };
 
-  //handle word selection & move logging
   const handleTileClick = async (index: number) => {
-    if (role === "spymaster") return;
+    if (!gameId || !playerId) {
+      console.warn("Waiting for gameId or playerId...");
+      return;
+    }
 
-    setFlippedTiles((prev) =>
-      prev.map((flipped, i) => (i === index ? !flipped : flipped))
-    );
+    console.log(`Handling tile click for word index ${index} in game ${gameId}`);
+
+    if (role === "spymaster" || flippedTiles[index] || team !== activeClueTeam) return;
+
+    setFlippedTiles((prev) => {
+      const newFlippedTiles = [...prev];
+      newFlippedTiles[index] = true;
+      return newFlippedTiles;
+    });
 
     const selectedWord = initialWords[index].word;
     const selectedColor = initialWords[index].color;
@@ -84,19 +185,19 @@ const CodenamesGame = () => {
     await logMoveToSupabase(selectedWord, index);
 
     if (selectedColor === "black") {
-      window.location.href = "/codenames/lose-game";
+      console.log("Assassin word selected! Redirecting to lose page...");
+      window.location.href = "/lose-game";
     }
   };
 
-  // submit a clue
   const submitClue = () => {
     if (clue.trim() !== "") {
       setGameLog((prevLog) => [`Clue: ${clue}`, ...prevLog]);
+      setActiveClueTeam(team);
       setClue("");
     }
   };
 
-  // get the correct tile color
   const getTileClass = (color: string) => {
     switch (color) {
       case "blue":
@@ -112,76 +213,25 @@ const CodenamesGame = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-red-400 p-6">
-      {/* game header */}
       <h2 className="text-center text-white text-2xl font-bold mb-4">
         {role === "spymaster" ? "Give your operatives a clue." : "Guess the words!"}
       </h2>
 
       <div className="flex justify-center space-x-6">
-        {/* left player panel */}
         <Card className="w-56 p-4 bg-red-700 text-white rounded-lg">
-          <h3 className="text-xl font-bold">6</h3>
-          <p>You</p>
-          <Button className="w-full bg-yellow-400 text-black font-bold mt-2">
-            Join
-          </Button>
+          <h3 className="text-xl font-bold">Red Team</h3>
+          <p>Operative(s) & Spymaster(s)</p>
         </Card>
 
-        {/* game board */}
         <div className="grid grid-cols-5 gap-2 bg-orange-900 p-4 rounded-lg">
           {initialWords.map((tile, index) => (
-            <div
-              key={index}
-              className={`relative w-28 h-16 rounded-md font-bold cursor-pointer transform transition-transform duration-500 ${
-                flippedTiles[index] ? "rotate-y-180" : ""
-              }`}
-              onClick={() => handleTileClick(index)}
-            >
-              <div className="absolute w-full h-full flex items-center justify-center bg-gray-400 text-black backface-hidden">
-                {tile.word}
-              </div>
-              {flippedTiles[index] && (
-                <div
-                  className={`absolute w-full h-full flex items-center justify-center rounded-md text-white backface-hidden rotate-y-180 ${getTileClass(tile.color)}`}
-                >
-                  {tile.word}
-                </div>
-              )}
+            <div key={index} className={`relative w-28 h-16 rounded-md font-bold cursor-pointer ${team !== activeClueTeam ? "opacity-50 cursor-not-allowed" : ""}`} onClick={() => handleTileClick(index)}>
+              <div className="absolute w-full h-full flex items-center justify-center bg-gray-400 text-black">{tile.word}</div>
+              {flippedTiles[index] && <div className={`absolute w-full h-full flex items-center justify-center rounded-md text-white ${getTileClass(tile.color)}`}>{tile.word}</div>}
             </div>
           ))}
         </div>
-
-        {/* right player panel */}
-        <Card className="w-56 p-4 bg-blue-700 text-white rounded-lg">
-          <h3 className="text-xl font-bold">6</h3>
-          <p>Me</p>
-          <Button className="w-full bg-yellow-400 text-black font-bold mt-2">
-            Join
-          </Button>
-        </Card>
       </div>
-
-      {/* clue submission */}
-      <div className="mt-4 flex justify-center items-center">
-        <Input
-          type="text"
-          value={clue}
-          onChange={(e) => setClue(e.target.value)}
-          placeholder="Type your clue"
-          className="w-64"
-        />
-        <Button className="ml-2 bg-yellow-400 text-black font-bold" onClick={submitClue}>
-          Give Clue
-        </Button>
-      </div>
-
-      {/* game log*/}
-      <Card className="w-64 mt-6 p-4 bg-gray-200 text-black rounded-lg mx-auto">
-        <h3 className="text-lg font-bold">Game Log</h3>
-        <div className="text-sm text-gray-600">
-          {gameLog.length > 0 ? gameLog.map((log, index) => <p key={index}>{log}</p>) : <p>-</p>}
-        </div>
-      </Card>
     </div>
   );
 };
