@@ -5,6 +5,7 @@ import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
 
+// "constructor" for what an AuthContext should contain
 type AuthContextType = {
   session: Session | null
   user: User | null
