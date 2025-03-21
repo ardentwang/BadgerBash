@@ -3,9 +3,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
+import { useAuth } from '@/context/AuthContext'
 
-export default function CreateGameButton() {
+export default function CreateLobby() {
   const router = useRouter();
+  const { user } = useAuth();
   const [isCreating, setIsCreating] = useState(false);
   
   const handleCreateLobby = async () => {
@@ -13,9 +15,14 @@ export default function CreateGameButton() {
     
     try {
       // Get existing lobby codes to avoid duplicates
-      const { data: lobbiesData } = await supabase
+      const { data: lobbiesData, error: fetchError } = await supabase
         .from('lobbies')
         .select('lobby_code');
+      
+      if (fetchError) {
+        console.error('Error fetching existing lobbies:', fetchError);
+        throw fetchError;
+      }
       
       const existingCodes = lobbiesData?.map(lobby => lobby.lobby_code) || [];
       
@@ -28,7 +35,7 @@ export default function CreateGameButton() {
       } while (existingCodes.includes(parseInt(code)));
       
       // Create the lobby in the database
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('lobbies')
         .insert([
           { 
@@ -39,23 +46,35 @@ export default function CreateGameButton() {
           }
         ]);
       
-      if (error) {
-        console.error('Error creating lobby:', error);
+      if (insertError) {
+        console.error('Error creating lobby:', insertError);
         return;
       }
       
       // Add the current user as the first player and host
-      const userId = "user-" + Math.random().toString(36).substring(2, 9); // Generate temporary ID
+      let userId;
+      let username;
       
-      // Save the user ID to localStorage for persistence
-      localStorage.setItem(`lobby_${code}_user_id`, userId);
+      if (user) {
+        // Use the authenticated user's ID if available
+        userId = user.id;
+        username = user.user_metadata?.username || 'Guest';
+      } else {
+        // Generate temporary ID for guests
+        userId = "user-" + Math.random().toString(36).substring(2, 9);
+        username = "Guest";
+        
+        // Save the user ID to localStorage for persistence
+        localStorage.setItem(`lobby_${code}_user_id`, userId);
+      }
       
       const { error: playerError } = await supabase
         .from('players')
         .insert([
           {
             user_id: userId,
-            name: "You (Host)",
+            name: username,
+            avatar_url: user?.user_metadata?.avatar_url || '/avatars/student.png',
             lobby_code: parseInt(code),
             is_host: true
           }
@@ -82,7 +101,7 @@ export default function CreateGameButton() {
       onClick={handleCreateLobby}
       disabled={isCreating}
     >
-      {isCreating ? "Creating..." : "Create Game"}
+      {isCreating ? "Creating..." : "Create Lobby"}
     </Button>
   );
 }
