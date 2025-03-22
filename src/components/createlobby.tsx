@@ -3,11 +3,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
-import { useAuth } from '@/context/AuthContext'
 
 export default function CreateLobby() {
   const router = useRouter();
-  const { user } = useAuth();
   const [isCreating, setIsCreating] = useState(false);
   
   const handleCreateLobby = async () => {
@@ -40,7 +38,7 @@ export default function CreateLobby() {
         .insert([
           { 
             name: 'New Lobby', 
-            player_count: 1, 
+            player_count: 0, 
             is_public: false, 
             lobby_code: parseInt(code)
           }
@@ -49,39 +47,6 @@ export default function CreateLobby() {
       if (insertError) {
         console.error('Error creating lobby:', insertError);
         return;
-      }
-      
-      // Add the current user as the first player and host
-      let userId;
-      let username;
-      
-      if (user) {
-        // Use the authenticated user's ID if available
-        userId = user.id;
-        username = user.user_metadata?.username || 'Guest';
-      } else {
-        // Generate temporary ID for guests
-        userId = "user-" + Math.random().toString(36).substring(2, 9);
-        username = "Guest";
-        
-        // Save the user ID to localStorage for persistence
-        localStorage.setItem(`lobby_${code}_user_id`, userId);
-      }
-      
-      const { error: playerError } = await supabase
-        .from('players')
-        .insert([
-          {
-            user_id: userId,
-            name: username,
-            avatar_url: user?.user_metadata?.avatar_url || '/avatars/student.png',
-            lobby_code: parseInt(code),
-            is_host: true
-          }
-        ]);
-      
-      if (playerError) {
-        console.error('Error adding player to lobby:', playerError);
       }
       
       // Immediately redirect to the lobby page

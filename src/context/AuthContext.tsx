@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         })
         
-        // Store user profile in database if you have a users table
+        // Store user profile in database
         const { error: profileError } = await supabase
           .from('users')
           .upsert({

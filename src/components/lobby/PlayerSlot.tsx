@@ -3,13 +3,23 @@
 import { Card, CardContent } from '@/components/ui/card'
 import Image from 'next/image'
 
-interface PlayerProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  player: any | null
-  isCurrentUser?: boolean
+// Define a proper type for the player data coming from lobby_players
+interface PlayerData {
+  id: string
+  user_id: string
+  lobby_id?: string
+  username: string
+  avatar_url: string
+  joined_at?: string
 }
 
-export default function PlayerSlot({ player, isCurrentUser }: PlayerProps) {
+interface PlayerProps {
+  player: PlayerData | null
+  isCurrentUser?: boolean
+  isHost?: boolean  // We'll pass this from the parent component
+}
+
+export default function PlayerSlot({ player, isCurrentUser, isHost = false }: PlayerProps) {
   if (!player) {
     // Empty player slot
     return (
@@ -27,15 +37,15 @@ export default function PlayerSlot({ player, isCurrentUser }: PlayerProps) {
         <div className="relative h-12 w-12 rounded-full overflow-hidden flex-shrink-0">
           <Image
             src={player.avatar_url || '/avatars/student.png'}
-            alt={player.name}
+            alt={`${player.username || 'Player'}'s avatar`}
             fill
             className="object-cover"
           />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-medium truncate">{player.name}</div>
+          <div className="font-medium truncate">{player.username}</div>
           <div className="flex items-center gap-2 mt-1">
-            {player.is_host && (
+            {isHost && (
               <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
                 Host
               </span>

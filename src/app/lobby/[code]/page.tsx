@@ -1,228 +1,328 @@
 "use client"
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useEffect, useState, useRef } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import PlayerSlot from '@/components/lobby/PlayerSlot'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { toast } from "sonner"
+
+// Define types for better type safety
+type Player = {
+  id: string
+  user_id: string
+  username: string
+  avatar_url: string
+  joined_at: string
+}
+
+type Lobby = {
+  id: string
+  name: string
+  lobby_code: string
+  player_count: number
+  game_started: boolean
+}
 
 export default function LobbyPage() {
   const { code } = useParams()
   const { user } = useAuth()
   const router = useRouter()
   
-  const [lobby, setLobby] = useState<any>(null)
+  const [lobby, setLobby] = useState<Lobby | null>(null)
+  const [players, setPlayers] = useState<Player[]>([])
   const [lobbyName, setLobbyName] = useState('')
-  const [players, setPlayers] = useState<any[]>([])
+  const [isHost, setIsHost] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [hasJoined, setHasJoined] = useState(false)
   
-  // This will track our subscriptions so we can clean them up
-  const [subscriptions, setSubscriptions] = useState<any>({
-    lobby: null,
-    players: null
-  })
-
-  // Function to handle page unload (closing browser/navigating away)
+  // Ref to track real component unmounting vs tab switching
+  const isUnmountingRef = useRef(false)
+  
+  // Handle component unmount
   useEffect(() => {
-    const handleBeforeUnload = async () => {
-      if (user && code) {
-        // Try to remove player when they're actually leaving the page
-        try {
-          await removePlayerFromLobby(code, user.id)
-        } catch (err) {
-          console.error('Error removing player during page unload:', err)
-        }
-      }
-    }
-
-    // Add unload handlers
-    window.addEventListener('beforeunload', handleBeforeUnload)
-    
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload)
+      isUnmountingRef.current = true
     }
-  }, [user, code])
+  }, [])
 
+  // Fetch lobby details
   useEffect(() => {
-    // Make sure we have a user and lobby code
-    if (!user || !code) return
+    if (!code || !user) return
     
-    // Function to fetch initial lobby data
-    const fetchLobbyData = async () => {
+    const fetchLobby = async () => {
       try {
-        // Get lobby data
+        // Get the lobby by code
         const { data: lobbyData, error: lobbyError } = await supabase
           .from('lobbies')
           .select('*')
           .eq('lobby_code', code)
           .single()
         
-        if (lobbyError) {
+        if (lobbyError || !lobbyData) {
           console.error('Error fetching lobby:', lobbyError)
-          setError('Lobby not found or cannot be accessed')
-          setIsLoading(false)
+          toast.error('Lobby not found', {
+            description: 'The lobby you are looking for does not exist'
+          })
+          router.push('/')
           return
         }
         
         setLobby(lobbyData)
-        setLobbyName(lobbyData.name || 'New Lobby')
+        setLobbyName(lobbyData.name)
         
-        // Get players in the lobby
-        const { data: playersData, error: playersError } = await supabase
-          .from('players')
+        // Fetch players in this lobby
+        const { data: playersData } = await supabase
+          .from('lobby_players')
           .select('*')
-          .eq('lobby_code', code)
+          .eq('lobby_id', lobbyData.id)
           .order('joined_at', { ascending: true })
         
-        if (playersError) {
-          console.error('Error fetching players:', playersError)
-          setError('Could not load players')
-          setIsLoading(false)
-          return
-        }
-        
         setPlayers(playersData || [])
-        setIsLoading(false)
         
-        // Add current user to lobby if not already present
+        // Check if user is already in this lobby
         const existingPlayer = playersData?.find(p => p.user_id === user.id)
-        if (!existingPlayer) {
-          try {
-            await addPlayerToLobby(code, user)
-          } catch (err) {
-            console.error('Error adding player to lobby:', err)
-            // Continue - we'll still show the lobby even if joining fails
-          }
+        if (existingPlayer) {
+          setHasJoined(true)
+        } else {
+          // Join the lobby if not already in
+          await joinLobby(lobbyData.id)
         }
-      } catch (err) {
-        console.error('Error in lobby initialization:', err)
-        setError('Failed to initialize lobby')
+        
+        // Check if user is the host (first player)
+        if (playersData && playersData.length > 0) {
+          setIsHost(playersData[0].user_id === user.id)
+        }
+        
         setIsLoading(false)
+      } catch (error) {
+        console.error('Error in lobby setup:', error)
+        setIsLoading(false)
+        toast.error('Error loading lobby')
       }
     }
     
-    // Setup real-time subscriptions
-    const setupSubscriptions = () => {
-      // 1. Subscribe to lobby updates
-      const lobbyChannel = supabase
-        .channel(`lobby:${code}`)
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'lobbies',
-          filter: `lobby_code=eq.${code}`
-        }, (payload) => {
-          console.log('Lobby updated:', payload)
-          if (payload.eventType === 'UPDATE') {
-            setLobby(payload.new)
-            setLobbyName(payload.new.name || 'New Lobby')
-          } else if (payload.eventType === 'DELETE') {
-            // Lobby was deleted, redirect to home
-            router.push('/')
-          }
-        })
-        .subscribe()
-      
-      // 2. Subscribe to player updates
-      const playersChannel = supabase
-        .channel(`players:${code}`)
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'players',
-          filter: `lobby_code=eq.${code}`
-        }, (payload) => {
-          console.log('Players updated:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            setPlayers(prev => [...prev, payload.new]);
-          } else if (payload.eventType === 'DELETE') {
-            // Log more information to help debug
-            console.log('Player deleted:', payload.old);
-            console.log('Current players before filter:', players);
-            
-            // Make sure we're using the user_id for filtering, not just the id
-            setPlayers(prev => prev.filter(p => p.id !== payload.old.id));
-          } else if (payload.eventType === 'UPDATE') {
-            setPlayers(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
-          }
-        })
-        .subscribe();
-      
-      // Store subscription references for cleanup
-      setSubscriptions({
-        lobby: lobbyChannel,
-        players: playersChannel
-      })
-    }
-    
-    // Initialize everything
-    fetchLobbyData().then(() => {
-      setupSubscriptions()
-    })
-    
-    // Cleanup function for component unmount
-    return () => {
-      // Unsubscribe from all channels
-      if (subscriptions.lobby) subscriptions.lobby.unsubscribe()
-      if (subscriptions.players) subscriptions.players.unsubscribe()
-      
-      // When explicitly navigating away using UI (not tab/window closing)
-      if (user) {
-        removePlayerFromLobby(code, user.id).catch(console.error)
-      }
-    }
+    fetchLobby()
   }, [code, user, router])
   
-  // Handle leaving the lobby
-  const handleLeaveLobby = async () => {
+  // Subscribe to lobby player changes
+  useEffect(() => {
+    if (!lobby || !lobby.id) return
+    
+    // Set up real-time subscription for player changes
+    const subscription = supabase
+      .channel('lobby_players_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'lobby_players',
+          filter: `lobby_id=eq.${lobby.id}`
+        },
+        async () => {
+          // Refetch all players when anything changes
+          const { data } = await supabase
+            .from('lobby_players')
+            .select('*')
+            .eq('lobby_id', lobby.id)
+            .order('joined_at', { ascending: true })
+          
+          setPlayers(data || [])
+          
+          // Update host status based on first player
+          if (data && data.length > 0 && user) {
+            setIsHost(data[0].user_id === user.id)
+          }
+        }
+      )
+      .subscribe()
+      
+    // Subscribe to lobby changes (for game_started status)
+    const lobbySubscription = supabase
+      .channel('lobby_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'lobbies',
+          filter: `id=eq.${lobby.id}`
+        },
+        (payload) => {
+          setLobby(payload.new as Lobby)
+          
+          // If game started, redirect to game page
+          if (payload.new.game_started && !payload.old.game_started) {
+            router.push(`/game/${code}`)
+          }
+        }
+      )
+      .subscribe()
+    
+    return () => {
+      subscription.unsubscribe()
+      lobbySubscription.unsubscribe()
+    }
+  }, [lobby, user, router, code])
+  
+  // Handle beforeunload to clean up when browser is closed
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (hasJoined && user && lobby) {
+        // Synchronous version of leave lobby for page unload
+        // const leaveUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lobby_players?lobby_id=eq.${lobby.id}&user_id=eq.${user.id}`
+        
+        navigator.sendBeacon(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/lobby_players?lobby_id=eq.${lobby.id}&user_id=eq.${user.id}`,
+          JSON.stringify({
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+            }
+          })
+        )
+      }
+    }
+    
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      
+      // Handle actual component unmount (not just tab switching)
+      if (isUnmountingRef.current && hasJoined) {
+        handleLeaveLobby(true)
+      }
+    }
+  }, [hasJoined, user, lobby])
+  
+  // Join the lobby
+  const joinLobby = async (lobbyId: string) => {
+    if (!user) return
+    
     try {
-      if (user) {
-        await removePlayerFromLobby(code, user.id)
+      // Instead of checking first then inserting,
+      // use upsert with onConflict option to handle duplicates gracefully
+      const { error: joinError } = await supabase
+        .from('lobby_players')
+        .upsert({
+          lobby_id: lobbyId,
+          user_id: user.id,
+          username: user.user_metadata?.username || 'Anonymous',
+          avatar_url: user.user_metadata?.avatar_url || '/avatars/student.png',
+          joined_at: new Date().toISOString()
+        }, { 
+          onConflict: 'lobby_id,user_id',
+          ignoreDuplicates: true 
+        })
+      
+      if (joinError) {
+        console.error('Join error:', joinError)
+        throw joinError
+      }
+      
+      // Only increment player count if this was a new insertion
+      // You might need a separate way to check if the player was just added
+      // or was already in the lobby
+      
+      setHasJoined(true)
+      toast.success('Joined lobby successfully')
+    } catch (error) {
+      console.error('Error joining lobby:', error)
+      toast.error(`Failed to join lobby: ${error || 'Unknown error'}`)
+    }
+  }
+  
+  // Update lobby name
+  const updateLobbyName = async () => {
+    if (!lobby || !isHost) return
+    
+    try {
+      const { error } = await supabase
+        .from('lobbies')
+        .update({ name: lobbyName })
+        .eq('id', lobby.id)
+      
+      if (error) throw error
+      
+      toast.success('Lobby name updated')
+    } catch (error) {
+      console.error('Error updating lobby name:', error)
+      toast.error('Failed to update lobby name')
+    }
+  }
+  
+  // Handle leaving the lobby
+  const handleLeaveLobby = async (isUnmount = false) => {
+    if (!user || !lobby || !hasJoined) return
+    
+    try {
+      // Remove from lobby_players
+      const { error: leaveError } = await supabase
+        .from('lobby_players')
+        .delete()
+        .eq('lobby_id', lobby.id)
+        .eq('user_id', user.id)
+      
+      if (leaveError) throw leaveError
+      
+      // Decrement player count
+      await supabase.rpc('decrement_player_count', { lobby_id: lobby.id })
+      
+      setHasJoined(false)
+      
+      if (!isUnmount) {
+        toast.success('Left lobby')
         router.push('/')
       }
     } catch (error) {
       console.error('Error leaving lobby:', error)
+      if (!isUnmount) {
+        toast.error('Failed to leave lobby')
+      }
     }
   }
-
-  if (isLoading) {
+  
+  // Start the game
+  const handleStartGame = async () => {
+    if (!lobby || !isHost) return
+    
+    if (players.length < 2) {
+      toast.error('Not enough players', {
+        description: 'You need at least 2 players to start a game'
+      })
+      return
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('lobbies')
+        .update({ game_started: true })
+        .eq('id', lobby.id)
+      
+      if (error) throw error
+      
+      router.push(`/game/${lobby.lobby_code}`)
+    } catch (error) {
+      console.error('Error starting game:', error)
+      toast.error('Failed to start game')
+    }
+  }
+  
+  if (isLoading || !lobby) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl">Loading lobby...</div>
+      <div className="min-h-screen w-full flex items-center justify-center">
+        <p>Loading lobby...</p>
       </div>
     )
   }
-  
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <div className="text-xl text-red-500">{error}</div>
-        <Button onClick={() => router.push('/')}>Return Home</Button>
-      </div>
-    )
-  }
-  
-  if (!lobby) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <div className="text-xl">Lobby not found</div>
-        <Button onClick={() => router.push('/')}>Return Home</Button>
-      </div>
-    )
-  }
-  
-  // Find the current user in the players list
-  const currentPlayer = players.find(p => p.user_id === user?.id);
-  const isHost = currentPlayer?.is_host || false
   
   return (
     <div>
@@ -238,27 +338,23 @@ export default function LobbyPage() {
               <label htmlFor="lobbyName" className="text-sm font-medium">
                 Lobby Name
               </label>
-              <Input
-                id="lobbyName"
-                value={lobbyName}
-                onChange={(e) => setLobbyName(e.target.value)}
-                onBlur={async () => {
-                  // Only allow host to update lobby name
-                  if (isHost) {
-                    // update backend when user finishes editing
-                    const { error } = await supabase
-                      .from('lobbies')
-                      .update({ name: lobbyName }) 
-                      .eq('lobby_code', code) 
-                      .select()
-                    if (error) {
-                      console.error('Error updating lobby name:', error);
-                    }
-                  }
-                }}
-                disabled={!isHost}
-                className="text-lg font-semibold"
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="lobbyName"
+                  value={lobbyName}
+                  onChange={(e) => setLobbyName(e.target.value)}
+                  disabled={!isHost}
+                />
+                {isHost && (
+                  <Button
+                    variant="outline"
+                    onClick={updateLobbyName}
+                    disabled={lobbyName === lobby.name}
+                  >
+                    Update
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Lobby Code</label>
@@ -271,32 +367,33 @@ export default function LobbyPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Players ({players.length}/4)</h3>
+              <h3 className="text-lg font-semibold">
+                Players ({players.length}/4)
+              </h3>
               <div className="grid grid-cols-2 gap-4">
                 {/* Always show 4 player slots */}
                 {Array.from({ length: 4 }).map((_, index) => (
                   <PlayerSlot 
-                    key={index}
-                    player={players[index] || null}
-                    isCurrentUser={players[index]?.user_id === user?.id}
-                  />
+                  key={index}
+                  player={players[index] || null}
+                  isCurrentUser={players[index]?.user_id === user?.id}
+                  isHost={index === 0}  // First player is the host
+                />
                 ))}
               </div>
               
               <div className="flex gap-4 mt-6 pt-4 border-t">
                 <Button 
-                    className="w-full" 
-                    onClick={() => {
-                      // Navigate to the Codenames lobby
-                      router.push('/codenames/joingame');
-                    }}
-                  >
-                    Start Game
-                  </Button>
+                  className="w-full" 
+                  onClick={handleStartGame}
+                  disabled={!isHost || players.length < 2}
+                >
+                  Start Game
+                </Button>
                 <Button 
                   variant="outline" 
                   className="w-full" 
-                  onClick={handleLeaveLobby}
+                  onClick={() => handleLeaveLobby()}
                 >
                   Leave Lobby
                 </Button>
@@ -307,184 +404,4 @@ export default function LobbyPage() {
       </div>
     </div>
   )
-}
-
-async function addPlayerToLobby(lobbyCode:any, user:any) {
-  try {
-    // Convert lobby code to integer if it's a string
-    const lobbyCodeInt = typeof lobbyCode === 'string' ? parseInt(lobbyCode) : lobbyCode;
-    
-    // First, try to upsert the player instead of insert
-    // This handles the race condition by using the database's atomicity
-    const { data, error } = await supabase
-      .from('players')
-      .upsert({
-        lobby_code: lobbyCodeInt,
-        user_id: user.id,
-        name: user.user_metadata?.username || 'Guest',
-        avatar_url: user.user_metadata?.avatar_url || '/avatars/student.png',
-        is_host: false, // We'll handle host assignment separately
-        joined_at: new Date().toISOString()
-      }, {
-        onConflict: 'lobby_code,user_id', // This specifies which columns form the unique constraint
-        ignoreDuplicates: false // Update the row if it exists
-      })
-      .select();
-    
-    if (error) {
-      console.error('Upsert error:', error);
-      throw error;
-    }
-    
-    // Check if we need to update the player count in the lobby
-    // Only do this if the player was newly inserted (not updated)
-    if (data && data.length > 0) {
-      // Update player count in lobby table
-      const { data: lobbyData, error: lobbyError } = await supabase
-        .from('lobbies')
-        .select('player_count')
-        .eq('lobby_code', lobbyCodeInt)
-        .single();
-      
-      if (!lobbyError && lobbyData) {
-        await supabase
-          .from('lobbies')
-          .update({ player_count: lobbyData.player_count + 1 })
-          .eq('lobby_code', lobbyCodeInt);
-      }
-    }
-    
-    return data;
-  } catch (error) {
-    // @ts-expect-error type safe
-    if (error && error.code === '23505') {
-      // If it's still a duplicate key error, log it but don't throw
-      console.warn('Player already in lobby, ignoring duplicate insertion');
-      
-      // Try to fetch the existing player info
-      const { data } = await supabase
-        .from('players')
-        .select('*')
-        .eq('lobby_code', typeof lobbyCode === 'string' ? parseInt(lobbyCode) : lobbyCode)
-        .eq('user_id', user.id)
-        .single();
-      
-      return data;
-    }
-    
-    // For other errors, log and throw
-    console.error('Error in addPlayerToLobby:', error);
-    throw error;
-  }
-}
-
-async function removePlayerFromLobby(lobbyCode:any, userId:any) {
-  try {
-    // Get the player to check if they're the host
-    const { data: player, error: playerError } = await supabase
-      .from('players')
-      .select('*')
-      .eq('lobby_code', lobbyCode)
-      .eq('user_id', userId)
-      .single();
-    
-    if (playerError || !player) {
-      console.log('Player not found in lobby or error:', playerError);
-      return;
-    }
-    
-    // Remove the player
-    const { error: removeError } = await supabase
-      .from('players')
-      .delete()
-      .eq('lobby_code', lobbyCode)
-      .eq('user_id', userId);
-    
-    if (removeError) {
-      console.error('Error removing player from lobby:', removeError);
-      throw removeError;
-    }
-    
-    console.log('Player successfully removed');
-    
-    // Get updated player count
-    const { data: lobbyData, error: lobbyError } = await supabase
-      .from('lobbies')
-      .select('player_count')
-      .eq('lobby_code', lobbyCode)
-      .single();
-    
-    if (lobbyError) {
-      console.error('Error getting lobby data:', lobbyError);
-      return;
-    }
-    
-    const newPlayerCount = Math.max((lobbyData?.player_count || 1) - 1, 0);
-    console.log('New player count will be:', newPlayerCount);
-    
-    // Update the player count
-    const { error: updateError } = await supabase
-      .from('lobbies')
-      .update({ player_count: newPlayerCount })
-      .eq('lobby_code', lobbyCode);
-    
-    if (updateError) {
-      console.error('Error updating lobby player count:', updateError);
-    }
-    
-    // If the player was the host and there are other players, assign a new host
-    if (player.is_host && newPlayerCount > 0) {
-      const { data: remainingPlayers, error: remainingError } = await supabase
-        .from('players')
-        .select('*')
-        .eq('lobby_code', lobbyCode)
-        .order('joined_at', { ascending: true })
-        .limit(1);
-      
-      if (remainingError) {
-        console.error('Error finding remaining players:', remainingError);
-      } else if (remainingPlayers && remainingPlayers.length > 0) {
-        const { error: hostError } = await supabase
-          .from('players')
-          .update({ is_host: true })
-          .eq('id', remainingPlayers[0].id);
-        
-        if (hostError) {
-          console.error('Error assigning new host:', hostError);
-        } else {
-          console.log('New host assigned:', remainingPlayers[0].name);
-        }
-      }
-    }
-    
-    // Check if this was the last player and delete the lobby if so
-    if (newPlayerCount === 0) {
-      console.log('Last player left, deleting lobby:', lobbyCode);
-      
-      const { error: checkPlayersError, count } = await supabase
-        .from('players')
-        .select('*', { count: 'exact', head: true })
-        .eq('lobby_code', lobbyCode);
-      
-      if (checkPlayersError) {
-        console.error('Error checking remaining players:', checkPlayersError);
-      } else if (count === 0) {
-        // Double-check that there are really no players left
-        const { error: deleteLobbyError } = await supabase
-          .from('lobbies')
-          .delete()
-          .eq('lobby_code', lobbyCode);
-        
-        if (deleteLobbyError) {
-          console.error('Error removing empty lobby:', deleteLobbyError);
-        } else {
-          console.log('Lobby successfully deleted');
-        }
-      } else {
-        console.log('Found', count, 'players still in lobby, not deleting');
-      }
-    }
-  } catch (err) {
-    console.error('Overall error in removePlayerFromLobby:', err);
-  }
 }
