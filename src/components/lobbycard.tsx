@@ -37,7 +37,7 @@ const LobbyCard = (props: LobbyProps) => {
 
             // Check if user is already in another lobby
             const { data: existingPlayer } = await supabase
-                .from('players')
+                .from('lobby_players')
                 .select('lobby_code')
                 .eq('user_id', user.id)
                 .single()
@@ -51,7 +51,7 @@ const LobbyCard = (props: LobbyProps) => {
             // If they're in a different lobby, remove them first
             if (existingPlayer) {
                 await supabase
-                    .from('players')
+                    .from('lobby_players')
                     .delete()
                     .eq('user_id', user.id)
                     .eq('lobby_code', existingPlayer.lobby_code)

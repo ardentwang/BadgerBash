@@ -69,7 +69,7 @@ export default function CreateLobby() {
       }
       
       const { error: playerError } = await supabase
-        .from('players')
+        .from('lobby_players')
         .insert([
           {
             user_id: userId,
