@@ -386,7 +386,7 @@ export default function LobbyPage() {
                 <Button 
                   className="w-full" 
                   onClick={handleStartGame}
-                  disabled={!isHost || players.length < 2}
+                  //disabled={!isHost || players.length < 2}
                 >
                   Start Game
                 </Button>
