@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
 
-export default function CreateGameButton() {
+export default function CreateLobby() {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
   
@@ -13,9 +13,14 @@ export default function CreateGameButton() {
     
     try {
       // Get existing lobby codes to avoid duplicates
-      const { data: lobbiesData } = await supabase
+      const { data: lobbiesData, error: fetchError } = await supabase
         .from('lobbies')
         .select('lobby_code');
+      
+      if (fetchError) {
+        console.error('Error fetching existing lobbies:', fetchError);
+        throw fetchError;
+      }
       
       const existingCodes = lobbiesData?.map(lobby => lobby.lobby_code) || [];
       
@@ -28,41 +33,20 @@ export default function CreateGameButton() {
       } while (existingCodes.includes(parseInt(code)));
       
       // Create the lobby in the database
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('lobbies')
         .insert([
           { 
             name: 'New Lobby', 
-            player_count: 1, 
+            player_count: 0, 
             is_public: false, 
             lobby_code: parseInt(code)
           }
         ]);
       
-      if (error) {
-        console.error('Error creating lobby:', error);
+      if (insertError) {
+        console.error('Error creating lobby:', insertError);
         return;
-      }
-      
-      // Add the current user as the first player and host
-      const userId = "user-" + Math.random().toString(36).substring(2, 9); // Generate temporary ID
-      
-      // Save the user ID to localStorage for persistence
-      localStorage.setItem(`lobby_${code}_user_id`, userId);
-      
-      const { error: playerError } = await supabase
-        .from('players')
-        .insert([
-          {
-            user_id: userId,
-            name: "You (Host)",
-            lobby_code: parseInt(code),
-            is_host: true
-          }
-        ]);
-      
-      if (playerError) {
-        console.error('Error adding player to lobby:', playerError);
       }
       
       // Immediately redirect to the lobby page
@@ -82,7 +66,7 @@ export default function CreateGameButton() {
       onClick={handleCreateLobby}
       disabled={isCreating}
     >
-      {isCreating ? "Creating..." : "Create Game"}
+      {isCreating ? "Creating..." : "Create Lobby"}
     </Button>
   );
 }
