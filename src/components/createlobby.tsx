@@ -1,12 +1,14 @@
 "use client"
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
 
 export default function CreateLobby() {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
+  const params = useParams();
+  const lobby_code = params.code;
   
   const handleCreateLobby = async () => {
     setIsCreating(true);
@@ -50,7 +52,7 @@ export default function CreateLobby() {
       }
       
       // Immediately redirect to the lobby page
-      router.push(`/lobby/${code}`);
+      router.push(`/lobby/${lobby_code}`);
       
     } catch (err) {
       console.error('Error in lobby creation process:', err);
