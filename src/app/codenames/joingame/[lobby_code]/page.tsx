@@ -10,7 +10,8 @@ import { supabase } from '@/lib/supabase';
 
 const CodenamesLobby = () => {
   const params = useParams();
-  const lobbyCode = params.lobby_code;
+  const rawLobbyCode = params.lobby_code;
+  const lobbyCode = Array.isArray(rawLobbyCode) ? rawLobbyCode[0] : rawLobbyCode;
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [userRole, setUserRole] = useState(null);
