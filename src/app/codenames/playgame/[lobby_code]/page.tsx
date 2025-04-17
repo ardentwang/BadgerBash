@@ -90,7 +90,7 @@ const CodenamesGame = () => {
   }, [userId, lobbyCode]);
 
   // Handle giving a clue (for spymaster)
-  const handleGiveClue = (clue) => {
+  const handleGiveClue = (String: clue) => {
     setGameLog([`${playerTeam} Spymaster's clue: ${clue}`, ...gameLog]);
     // You can implement the actual Supabase logging here
   };
