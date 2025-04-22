@@ -48,7 +48,7 @@ const CodenamesGame = () => {
           .from('codenames_roles')
           .select('*')
           .eq('user_id', userId)
-          .eq('lobby_code', parseInt(lobbyCode));
+          .eq('lobby_code', lobbyCode);
         
         if (error) {
           console.error("Error fetching user role:", error);
@@ -64,7 +64,7 @@ const CodenamesGame = () => {
         const { data: lobbyPlayers, error: playersError } = await supabase
           .from('codenames_roles')
           .select('*')
-          .eq('lobby_code', parseInt(lobbyCode));
+          .eq('lobby_code', lobbyCode);
 
         if (playersError) {
           console.error("Error fetching players:", playersError);
@@ -96,7 +96,7 @@ const CodenamesGame = () => {
           event: '*', 
           schema: 'public', 
           table: 'codenames_roles',
-          filter: `lobby_code=eq.${parseInt(lobbyCode as string)}`
+          filter: `lobby_code=eq.${lobbyCode}`
         }, 
         () => {
           fetchUserData();
@@ -131,8 +131,6 @@ const CodenamesGame = () => {
     }));
     return wordColorList; 
 }
-
-
 
   // Handle giving a clue (for spymaster)
   const handleGiveClue = (String: clue) => {

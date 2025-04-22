@@ -32,7 +32,7 @@ const CodenamesLobby = () => {
       const { data, error } = await supabase
         .from('codenames_roles')
         .select('*')
-        .eq('lobby_code', parseInt(lobbyCode));
+        .eq('lobby_code', lobbyCode);
         
       if (error) {
         console.error("Error fetching players:", error);
@@ -66,7 +66,7 @@ const CodenamesLobby = () => {
             event: '*', 
             schema: 'public', 
             table: 'codenames_roles',
-            filter: `lobby_code=eq.${parseInt(lobbyCode)}`
+            filter: `lobby_code=eq.${lobbyCode}`
           }, 
           (payload) => {
             console.log('Change received!', payload);
@@ -93,7 +93,7 @@ const CodenamesLobby = () => {
       user_id: userId,
       role: role,
       team: team,
-      lobby_code: lobbyCode ? parseInt(lobbyCode) : null
+      lobby_code: lobbyCode || null
     };
     
     console.log("Sending data to Supabase:", roleData);
@@ -105,7 +105,7 @@ const CodenamesLobby = () => {
         .from('codenames_roles')
         .select('*')
         .eq('user_id', userId)
-        .eq('lobby_code', parseInt(lobbyCode));
+        .eq('lobby_code', lobbyCode);
       
       if (fetchError) {
         console.error("Error checking existing role:", fetchError.message);
@@ -126,7 +126,7 @@ const CodenamesLobby = () => {
             team: team
           })
           .eq('user_id', userId)
-          .eq('lobby_code', parseInt(lobbyCode));
+          .eq('lobby_code', lobbyCode);
       } else {
         // Insert new role
         result = await supabase
