@@ -25,6 +25,9 @@ const CodenamesGame = () => {
   const [loading, setLoading] = useState(true);
   const [players, setPlayers] = useState([]);
 
+  // words and color
+  const [wordColorList, setWordColorList] = useState<{ word: string; color: string }[] | null>(null);
+
   // Fetch user role and team from database
   useEffect(() => {
     const fetchUserData = async () => {
@@ -67,6 +70,12 @@ const CodenamesGame = () => {
     };
     
     fetchUserData();
+
+    const loadWords = async () => {
+      const words = await fetchWordsByLobby();
+      setWordColorList(words);
+    };
+    loadWords();
     
     // Set up real-time subscription
     const channel = supabase
@@ -87,7 +96,32 @@ const CodenamesGame = () => {
     return () => {
       supabase.removeChannel(channel);
     };
+   
   }, [userId, lobbyCode]);
+
+  // Function to Fetch words for the game
+  async function fetchWordsByLobby(){
+    // Step 1: Query Supabase by lobby_id
+    const { data, error } = await supabase
+      .from('codenames_games') 
+      .select('words')          
+      .single();                
+    if (error) {
+      console.error('Error fetching words:', error);
+      return null;
+    }
+
+    const wordColorDict = data.words; // This is the JSON object 
+
+    // Converting dictionary to list-wrapped dictionary
+    const wordColorList = Object.entries(wordColorDict).map(([word, color]) => ({
+      word,
+      color: color as string
+    }));
+    return wordColorList; 
+}
+
+
 
   // Handle giving a clue (for spymaster)
   const handleGiveClue = (String: clue) => {
@@ -137,7 +171,7 @@ const CodenamesGame = () => {
         <div className="flex-grow flex justify-center">
           {playerRole === 'spymaster' ? (
             <SpymasterBoard 
-              words={initialWords} 
+              words={wordColorList} 
               team={playerTeam} 
               onGiveClue={handleGiveClue}
             />
