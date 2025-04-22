@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 
+//changed this to not be a constant on the testing (the head) branch.
 const initialWords = [
   { word: "COPPER", color: "blue" },
   { word: "RING", color: "blue" },
