@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Pixelify_Sans } from 'next/font/google'
 import { AuthProvider } from '@/context/AuthContext';
+import { Toaster } from "@/components/ui/sonner"
 
 const pixelifySans = Pixelify_Sans({
   subsets: ['latin'],
@@ -25,6 +26,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           {children}
+          <Toaster/>
         </AuthProvider>
       </body>
     </html>

@@ -1,6 +1,6 @@
-"use client"
-import { useState, FormEvent, ChangeEvent } from "react"
-import { FC } from "react"
+"use client";
+
+import { useState, FormEvent, ChangeEvent } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,73 +8,100 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "./ui/dialog"
-import { Button } from "./ui/button"
-import { Input } from "./ui/input"
-import { Label } from "./ui/label"
-import { supabase } from "@/lib/supabase"
+} from "./ui/dialog";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+// import { supabase } from "@/lib/supabase"; // Real authentication code (not used in fake login)
 
 interface SignInModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const SignInModal: FC<SignInModalProps> = ({ isOpen, onClose }) => {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+const SignInModal = ({ isOpen, onClose }: SignInModalProps) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
-    
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    console.log("Logging in user:", email);
+
+    // --- Real authentication code (commented out) ---
+    /*
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
-      })
+      });
       
       if (error) {
-        setError(error.message)
-        throw error
+        setError(error.message);
+        throw error;
       }
       
-      console.log("Successfully signed in:", data)
-      onClose()
+      console.log("Successfully signed in:", data);
+      if (data.session?.user) {
+        localStorage.setItem("user", JSON.stringify(data.session.user));
+        window.dispatchEvent(new Event("userUpdate"));
+      }
+      onClose();
     } catch (error) {
-      console.error("Sign in error:", error)
+      console.error("Sign in error:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+    */
+
+    // --- Fake successful login ---
+    setTimeout(() => {
+      // Derive username from email by removing numbers
+      const derivedUsername = email.split("@")[0].replace(/[0-9]/g, "");
+      const fakeUser = {
+        id: "fake-id",
+        email,
+        user_metadata: { full_name: derivedUsername }
+      };
+      console.log("Fake login successful:", fakeUser);
+      localStorage.setItem("user", JSON.stringify(fakeUser));
+      window.dispatchEvent(new Event("userUpdate"));
+      onClose(); // Close the modal
+      setIsLoading(false);
+    }, 1000);
+  };
 
   async function signInWithGoogle() {
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
       
+      // --- Real Google authentication code (commented out) ---
+      /*
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-            //SHOULD BE window.location.origin/auth/callback! 
-            // I just need it redirected back to the Homepage for testing reasons, but here is where we should process user metadata ideally
-          redirectTo: `${window.location.origin}/`
-        }
-      })
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
       
       if (error) {
-        setError(error.message)
-        throw error
+        setError(error.message);
+        throw error;
       }
       
-      // auth is handled by redirect, so no need to call onClose(), this is supabase specific, and with our planned future iterations of different forms of sign-in
-      console.log("Google sign-in initiated", data)
+      console.log("Google sign-in initiated", data);
+      */
+      
+      console.log("Google sign-in is not implemented in this fake flow.");
     } catch (error) {
-      console.error("Failed to sign in with Google", error)
+      console.error("Failed to sign in with Google", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -84,7 +111,7 @@ const SignInModal: FC<SignInModalProps> = ({ isOpen, onClose }) => {
         <DialogHeader>
           <DialogTitle>Sign In</DialogTitle>
           <DialogDescription>
-            Enter your credentials to access your account.
+            Enter your email and password to sign in.
           </DialogDescription>
         </DialogHeader>
 
@@ -176,7 +203,7 @@ const SignInModal: FC<SignInModalProps> = ({ isOpen, onClose }) => {
         </div>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};
 
-export default SignInModal
+export default SignInModal;
