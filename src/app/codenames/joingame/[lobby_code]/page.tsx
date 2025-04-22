@@ -7,41 +7,86 @@ import { Card } from "@/components/ui/card";
 import { User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext"
 import { supabase } from '@/lib/supabase';
+import Papa from 'papaparse';
+
+interface CodenamesPlayer {
+  id: string;
+  user_id: string;
+  role: "red_spymaster" | "blue_spymaster" | "red_operative" | "blue_operative";
+  lobby_code: number;
+  users?: UserInfo | UserInfo[];
+}
+
+interface UserInfo {
+  username: string;
+  avatar_url: string;
+}
+
+interface FormattedPlayer {
+  user_id: string;
+  username: string;
+  avatar_url: string;
+  role: string;
+}
 
 const CodenamesLobby = () => {
   const params = useParams();
   const rawLobbyCode = params.lobby_code;
-  const lobbyCode = Array.isArray(rawLobbyCode) ? rawLobbyCode[0] : rawLobbyCode;
-  const [players, setPlayers] = useState([]);
+  // Check if rawLobbyCode exists before processing it
+  const arrayLobbyCode = rawLobbyCode ? (Array.isArray(rawLobbyCode) ? rawLobbyCode[0] : rawLobbyCode) : "";
+  const lobbyCode = arrayLobbyCode ? parseInt(arrayLobbyCode, 10) : 0; 
+  const [players, setPlayers] = useState<FormattedPlayer[]>([]);
   const [loading, setLoading] = useState(false);
-  const [userRole, setUserRole] = useState(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const router = useRouter();
   const { user } = useAuth();
   const userId = user?.id;
   const userName = user?.user_metadata.username;
-  const userProfile = user?.user_metadata.avatar_url;
+
   // Function to fetch players in the lobby
   const fetchPlayers = async () => {
     try {
       const { data, error } = await supabase
         .from('codenames_roles')
-        .select('*')
-        .eq('lobby_code', parseInt(lobbyCode));
+        .select(`
+          *,
+          users!codenames_roles_user_id_fkey (
+            username,
+            avatar_url
+          )
+        `)
+        .eq('lobby_code', lobbyCode);
         
       if (error) {
         console.error("Error fetching players:", error);
         return;
       }
       
-      setPlayers(data || []);
+      console.log(JSON.stringify(data, null, 2));
+      
+      // Format the data to match the expected structure in the UI
+      const formattedPlayers = (data as unknown as CodenamesPlayer[]).map(player => {
+        // Handle both array and object cases for user info
+        const userInfo = Array.isArray(player.users) 
+          ? player.users[0] 
+          : player.users;
+          
+        return {
+          user_id: player.user_id,
+          username: userInfo?.username || 'Unknown User',
+          avatar_url: userInfo?.avatar_url || '/avatars/default.png',
+          role: player.role
+        };
+      });
+      
+      console.log("Formatted Players:", formattedPlayers);
+      
+      setPlayers(formattedPlayers as FormattedPlayer[]);
       
       // Check if current user has already selected a role
-      const currentUserRole = data?.find(player => player.user_id === userId);
+      const currentUserRole = formattedPlayers.find(player => player.user_id === userId);
       if (currentUserRole) {
-        setUserRole({
-          role: currentUserRole.role,
-          team: currentUserRole.team
-        });
+        setUserRole(currentUserRole.role);
       }
     } catch (error) {
       console.error("Error fetching players:", error);
@@ -60,7 +105,7 @@ const CodenamesLobby = () => {
             event: '*', 
             schema: 'public', 
             table: 'codenames_roles',
-            filter: `lobby_code=eq.${parseInt(lobbyCode)}`
+            filter: `lobby_code=eq.${lobbyCode}`
           }, 
           (payload) => {
             console.log('Change received!', payload);
@@ -76,7 +121,7 @@ const CodenamesLobby = () => {
   }, [lobbyCode, userId]);
 
   // Function to handle role selection
-  const handleRoleSelection = async (role, team) => {
+  const handleRoleSelection = async (role: "red_spymaster" | "blue_spymaster" | "red_operative" | "blue_operative") => {
     if (!userId) {
       console.error("User not authenticated");
       return;
@@ -86,8 +131,7 @@ const CodenamesLobby = () => {
     const roleData = {
       user_id: userId,
       role: role,
-      team: team,
-      lobby_code: lobbyCode ? parseInt(lobbyCode) : null
+      lobby_code: lobbyCode || null
     };
     
     console.log("Sending data to Supabase:", roleData);
@@ -99,7 +143,7 @@ const CodenamesLobby = () => {
         .from('codenames_roles')
         .select('*')
         .eq('user_id', userId)
-        .eq('lobby_code', parseInt(lobbyCode));
+        .eq('lobby_code', lobbyCode);
       
       if (fetchError) {
         console.error("Error checking existing role:", fetchError.message);
@@ -116,11 +160,10 @@ const CodenamesLobby = () => {
         result = await supabase
           .from('codenames_roles')
           .update({
-            role: role,
-            team: team
+            role: role
           })
           .eq('user_id', userId)
-          .eq('lobby_code', parseInt(lobbyCode));
+          .eq('lobby_code', lobbyCode);
       } else {
         // Insert new role
         result = await supabase
@@ -136,7 +179,7 @@ const CodenamesLobby = () => {
       }
 
       console.log("Supabase response:", result.data);
-      console.log(`Successfully joined as ${role} for team ${team}`);
+      console.log(`Successfully joined as ${role}`);
       setLoading(false);
       
       // Refresh players instead of redirecting
@@ -148,10 +191,85 @@ const CodenamesLobby = () => {
       setLoading(false);
     }
   };
+
+  async function generateAndUploadCards() {
+    const filePath = "/word_bank/codenames.csv"; // Path to your CSV file
+    try {
+      // Fetch the CSV file
+      const response = await fetch(filePath);
+      if (!response.ok) {
+        throw new Error("Failed to fetch the CSV file");
+      }
+      const csvText = await response.text();
+
+      // Parse the CSV content
+      const words = Papa.parse<string[]>(csvText, {
+        header: false, // Adjust based on your CSV structure
+        skipEmptyLines: true,
+      }).data.flat(); // Flatten the array if necessary
+
+      if (words.length < 25) {
+        throw new Error('Not enough words in the word bank');
+      }
+
+      // Step 3: Shuffle and select 25 words
+      const selectedWords = shuffleArray(words).slice(0, 25);
+
+      // Step 4: Assign colors
+      const colors = [
+        ...Array(8).fill('red'),
+        ...Array(8).fill('blue'),
+        ...Array(8).fill('yellow'),
+        'black'
+      ];
+      const shuffledColors = shuffleArray(colors);
+
+      // Step 5: Create word-color mapping with revealed state
+      const wordColorMapping = {};
+      selectedWords.forEach((word, index) => {
+        wordColorMapping[word] = [shuffledColors[index], false]; // [color, revealed]
+      });
+
+      // Step 6: Insert into Supabase
+      const { error } = await supabase
+        .from('codenames_games')
+        .upsert([{
+          lobby_code: lobbyCode,
+          words: wordColorMapping
+        }]);
+
+      if (error) throw error;
+
+      console.log('Inserted successfully!', wordColorMapping);
+    } catch (err) {
+      console.error('Error:', err);
+    }
+  }
+  
+  // Utility function: shuffle array
+  function shuffleArray<T>(array: T[]): T[] {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
   
   // Function to start the game and redirect all players
   const startGame = () => {
+    generateAndUploadCards();
     router.push(`/codenames/playgame/${lobbyCode}`);
+  };
+
+  // Helper function to get team color from role
+  const getTeamFromRole = (role: string) => {
+    return role.startsWith('red_') ? 'red' : 'blue';
+  };
+
+  // Helper function to get role type from role
+  const getRoleTypeFromRole = (role: string) => {
+    return role.endsWith('_spymaster') ? 'spymaster' : 'operative';
   };
 
   return (
@@ -178,42 +296,42 @@ const CodenamesLobby = () => {
           <h3 className="text-lg font-bold">Operative(s)</h3>
           <div className="mt-2 mb-2">
             {players
-              .filter(player => player.team === 'red' && player.role === 'operative')
+              .filter(player => player.role === 'red_operative')
               .map(player => (
                 <div key={player.user_id} className="text-sm">{player.user_id === userId ? 'You' : player.user_id}</div>
               ))}
-            {players.filter(player => player.team === 'red' && player.role === 'operative').length === 0 && (
+            {players.filter(player => player.role === 'red_operative').length === 0 && (
               <p className="text-sm">-</p>
             )}
           </div>
           <Button
-            className={`w-full ${userRole?.team === 'red' && userRole?.role === 'operative' 
+            className={`w-full ${userRole === 'red_operative' 
               ? 'bg-green-500' : 'bg-yellow-400'} text-black font-bold mt-2`}
-            onClick={() => handleRoleSelection("operative", "red")}
+            onClick={() => handleRoleSelection("red_operative")}
             disabled={loading}
           >
-            {loading ? "Joining..." : userRole?.team === 'red' && userRole?.role === 'operative' 
+            {loading ? "Joining..." : userRole === 'red_operative' 
               ? "Selected" : "Join as Operative"}
           </Button>
 
           <h3 className="text-lg font-bold mt-4">Spymaster(s)</h3>
           <div className="mt-2 mb-2">
             {players
-              .filter(player => player.team === 'red' && player.role === 'spymaster')
+              .filter(player => player.role === 'red_spymaster')
               .map(player => (
                 <div key={player.user_id} className="text-sm">{player.user_id === userId ? 'You' : player.user_id}</div>
               ))}
-            {players.filter(player => player.team === 'red' && player.role === 'spymaster').length === 0 && (
+            {players.filter(player => player.role === 'red_spymaster').length === 0 && (
               <p className="text-sm">-</p>
             )}
           </div>
           <Button
-            className={`w-full ${userRole?.team === 'red' && userRole?.role === 'spymaster' 
+            className={`w-full ${userRole === 'red_spymaster' 
               ? 'bg-green-500' : 'bg-yellow-400'} text-black font-bold mt-2`}
-            onClick={() => handleRoleSelection("spymaster", "red")}
+            onClick={() => handleRoleSelection("red_spymaster")}
             disabled={loading}
           >
-            {loading ? "Joining..." : userRole?.team === 'red' && userRole?.role === 'spymaster' 
+            {loading ? "Joining..." : userRole === 'red_spymaster' 
               ? "Selected" : "Join as Spymaster"}
           </Button>
         </Card>
@@ -253,42 +371,42 @@ const CodenamesLobby = () => {
           <h3 className="text-lg font-bold">Operative(s)</h3>
           <div className="mt-2 mb-2">
             {players
-              .filter(player => player.team === 'blue' && player.role === 'operative')
+              .filter(player => player.role === 'blue_operative')
               .map(player => (
                 <div key={player.user_id} className="text-sm">{player.user_id === userId ? 'You' : player.user_id}</div>
               ))}
-            {players.filter(player => player.team === 'blue' && player.role === 'operative').length === 0 && (
+            {players.filter(player => player.role === 'blue_operative').length === 0 && (
               <p className="text-sm">-</p>
             )}
           </div>
           <Button
-            className={`w-full ${userRole?.team === 'blue' && userRole?.role === 'operative' 
+            className={`w-full ${userRole === 'blue_operative' 
               ? 'bg-green-500' : 'bg-yellow-400'} text-black font-bold mt-2`}
-            onClick={() => handleRoleSelection("operative", "blue")}
+            onClick={() => handleRoleSelection("blue_operative")}
             disabled={loading}
           >
-            {loading ? "Joining..." : userRole?.team === 'blue' && userRole?.role === 'operative' 
+            {loading ? "Joining..." : userRole === 'blue_operative' 
               ? "Selected" : "Join as Operative"}
           </Button>
 
           <h3 className="text-lg font-bold mt-4">Spymaster(s)</h3>
           <div className="mt-2 mb-2">
             {players
-              .filter(player => player.team === 'blue' && player.role === 'spymaster')
+              .filter(player => player.role === 'blue_spymaster')
               .map(player => (
                 <div key={player.user_id} className="text-sm">{player.user_id === userId ? 'You' : player.user_id}</div>
               ))}
-            {players.filter(player => player.team === 'blue' && player.role === 'spymaster').length === 0 && (
+            {players.filter(player => player.role === 'blue_spymaster').length === 0 && (
               <p className="text-sm">-</p>
             )}
           </div>
           <Button
-            className={`w-full ${userRole?.team === 'blue' && userRole?.role === 'spymaster' 
+            className={`w-full ${userRole === 'blue_spymaster' 
               ? 'bg-green-500' : 'bg-yellow-400'} text-black font-bold mt-2`}
-            onClick={() => handleRoleSelection("spymaster", "blue")}
+            onClick={() => handleRoleSelection("blue_spymaster")}
             disabled={loading}
           >
-            {loading ? "Joining..." : userRole?.team === 'blue' && userRole?.role === 'spymaster' 
+            {loading ? "Joining..." : userRole === 'blue_spymaster' 
               ? "Selected" : "Join as Spymaster"}
           </Button>
         </Card>

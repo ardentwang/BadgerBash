@@ -5,7 +5,6 @@ import Image from 'next/image'
 
 // Define a proper type for the player data coming from lobby_players
 interface PlayerData {
-  id: string
   user_id: string
   lobby_id?: string
   username: string

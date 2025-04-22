@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     removeConsole: 
       process.env.NODE_ENV === 'production'
   },
-  reactStrictMode: true,
+  reactStrictMode: false,
 };
 
 export default nextConfig;
