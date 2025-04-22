@@ -9,20 +9,47 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from "@/context/AuthContext"
 import { useEffect, useState } from 'react'
 
+interface Lobby {
+  id: string,
+  lobby_code: number,
+  name: string,
+  player_count: number,
+  created_at: string,
+  updated_at?: string,
+  is_public: boolean,
+  game_start: boolean
+}
+
+interface UserInfo {
+  username: string;
+  avatar_url: string;
+}
+
+interface LobbyPlayer {
+  user_id: string;
+  joined_at: string;
+  status: string;
+  // Make users flexible to handle both array and single object cases
+  users: UserInfo | UserInfo[];
+}
+
+interface FormattedPlayer {
+  user_id: string;
+  username: string;
+  avatar_url: string;
+  joined_at: string;
+  is_host: boolean;
+}
+
 const LobbyPage = () => {
   // get the lobby code to push to next game as well as match supabase code
   const params = useParams();
   const lobbyCode = params.lobby_code;
-  console.log("Lobby Code:", lobbyCode);
-  
-  const [players, setPlayers] = useState([]);
-  const [lobby, setLobby] = useState(null);
+  const [players, setPlayers] = useState<FormattedPlayer[]>([]);
+  const [lobby, setLobby] = useState<Lobby | null>(null);
   const [loading, setLoading] = useState(true);
-
   const { user } = useAuth();
   const userID = user?.id;
-  console.log("UserID: ", userID)
-  
   const router = useRouter();
   
   // Fetch all players in the lobby with their user info
@@ -32,15 +59,12 @@ const LobbyPage = () => {
       const { data, error } = await supabase
         .from('lobbies_players')
         .select(`
-          id,
           user_id,
           joined_at,
           status,
           users!lobbies_players_user_id_fkey (
-            id,
             username,
-            avatar_url,
-            is_guest
+            avatar_url
           )
         `)
         .eq('lobby_code', lobbyCode)
@@ -48,17 +72,26 @@ const LobbyPage = () => {
       
       if (error) throw error;
 
-      console.log(data)
+      console.log(JSON.stringify(data, null, 2));
       
       // Format the data to match the expected structure in the UI
-      const formattedPlayers = data.map(player => ({
-        user_id: player.user_id,
-        username: player.users?.username || 'Unknown User',
-        avatar_url: player.users?.avatar_url || '/avatars/default.png',
-        joined_at: player.joined_at,
-        is_host: false
-      }));
+      const formattedPlayers = (data as unknown as LobbyPlayer[]).map(player => {
+        // Handle both array and object cases
+        const userInfo = Array.isArray(player.users) 
+          ? player.users[0] 
+          : player.users;
+          
+        return {
+          user_id: player.user_id,
+          username: userInfo?.username || 'Unknown User',
+          avatar_url: userInfo?.avatar_url || '/avatars/default.png',
+          joined_at: player.joined_at,
+          is_host: false
+        };
+      });
       
+      console.log("Formatted Players:", formattedPlayers)
+
       // Sort players by join time to determine host
       formattedPlayers.sort((a, b) => 
         new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
@@ -69,7 +102,7 @@ const LobbyPage = () => {
         formattedPlayers[0].is_host = true;
       }
       
-      setPlayers(formattedPlayers);
+      setPlayers(formattedPlayers as FormattedPlayer[]);
       
       // Update player count in the lobby
       if (lobby) {
@@ -108,7 +141,10 @@ const LobbyPage = () => {
             last_active: new Date().toISOString()
           });
           
-        if (error) throw error;
+        if (error) {
+          console.log("fetch error:", error)
+          throw error;
+        }
         
         console.log("Player added to lobby");
       } else if (existingPlayer.status !== 'active') {
@@ -128,9 +164,6 @@ const LobbyPage = () => {
       } else {
         console.log("Player already active in lobby");
       }
-      
-      // Refresh player list
-      await fetchPlayers();
     } catch (err) {
       console.error('Error adding player to lobby:', err);
     }
@@ -193,11 +226,12 @@ const LobbyPage = () => {
           .from('lobbies')
           .select('*')
           .eq('lobby_code', lobbyCode)
-          .single();
+          .single<Lobby>();
           
         if (lobbyError) throw lobbyError;
         
-        setLobby(lobbyData);
+        //
+        setLobby(lobbyData as Lobby);
         
         // 2. Add current player to the lobby
         await addPlayerToLobby();

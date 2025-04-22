@@ -56,16 +56,16 @@ const CreateLobby = () => {
   };
 
   return (
-    <div className="w-48">
+    //<div className="w-64">
       <Button
-        className="w-full text-md"
+        className="w-full py-7 text-lg text-white bg-blue-800"
         size="lg"
         onClick={createLobby} // ✅ Fix: Call `createLobby`, not `CreateLobby`
         disabled={loading}
       >
         {loading ? "Creating Lobby..." : "Create Game Lobby"}
       </Button>
-    </div>
+    //</div>
   );
 };
 
