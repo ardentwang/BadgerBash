@@ -11,10 +11,20 @@ import TeamPanel from "@/components/codenames/TeamPanel";
 import GameLog from "@/components/codenames/GameLog";
 import { initialWords } from "@/components/codenames/GameData";
 
+type PlayerInfo= {
+  id: string;
+  user_id: string;
+  role: string;
+  team: string;
+  lobby_code: number;
+};
+
 const CodenamesGame = () => {
   const params = useParams();
   const rawLobbyCode = params.lobby_code;
-  const lobbyCode = Array.isArray(rawLobbyCode) ? rawLobbyCode[0] : rawLobbyCode;
+  // Check if rawLobbyCode exists before processing it
+  const arrayLobbyCode = rawLobbyCode ? (Array.isArray(rawLobbyCode) ? rawLobbyCode[0] : rawLobbyCode) : "";
+  const lobbyCode = arrayLobbyCode ? parseInt(arrayLobbyCode, 10) : 0; 
   const { user } = useAuth();
   const userId = user?.id;
 
@@ -23,7 +33,7 @@ const CodenamesGame = () => {
   const [playerTeam, setPlayerTeam] = useState(null);
   const [gameLog, setGameLog] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [players, setPlayers] = useState([]);
+  const [players, setPlayers] = useState<PlayerInfo[]>([]);
 
   // Fetch user role and team from database
   useEffect(() => {
@@ -59,6 +69,7 @@ const CodenamesGame = () => {
         }
 
         setPlayers(lobbyPlayers || []);
+        console.log("Players:", lobbyPlayers)
       } catch (error) {
         console.error("Error in data fetching:", error);
       } finally {
