@@ -7,6 +7,10 @@ import { Card } from "@/components/ui/card";
 import { User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext"
 import { supabase } from '@/lib/supabase';
+import Papa from 'papaparse';
+import { parse } from 'path';
+
+
 
 const CodenamesLobby = () => {
   const params = useParams();
@@ -150,9 +154,74 @@ const CodenamesLobby = () => {
       setLoading(false);
     }
   };
+
+    async function generateAndUploadCards() {
+      const filePath = "/word_bank/codenames.csv"; // Path to your CSV file
+      try {
+        // Fetch the CSV file
+        const response = await fetch(filePath);
+        if (!response.ok) {
+          throw new Error("Failed to fetch the CSV file");
+        }
+        const csvText = await response.text();
+  
+      // Parse the CSV content
+      const words = Papa.parse<string[]>(csvText, {
+        header: false, // Adjust based on your CSV structure
+        skipEmptyLines: true,
+      }).data.flat(); // Flatten the array if necessary
+
+      if (words.length < 25) {
+        throw new Error('Not enough words in the word bank');
+      }
+  
+      // Step 3: Shuffle and select 25 words
+      const selectedWords = shuffleArray(words).slice(0, 25);
+  
+      // Step 4: Assign colors
+      const colors = [
+        ...Array(8).fill('red'),
+        ...Array(8).fill('blue'),
+        ...Array(8).fill('yellow'),
+        'black'
+      ];
+      const shuffledColors = shuffleArray(colors);
+  
+      // Step 5: Create word-color mapping
+      const wordColorMapping = selectedWords.reduce((acc: Record<string, string>, word, index) => {
+        acc[word] = shuffledColors[index];
+        return acc;
+      }, {});
+  
+      // Step 6: Insert into Supabase
+      const { error } = await supabase
+        .from('codenames_games') // Replace with your table
+        .upsert([{
+          lobby_code: lobbyCode,
+          words: wordColorMapping 
+          }]); // Assuming 'words' column is JSON type
+  
+      if (error) throw error;
+  
+      console.log('Inserted successfully!', wordColorMapping);
+    } catch (err) {
+      console.error('Error:', err);
+    }
+  }
+  
+  // Utility function: shuffle array
+  function shuffleArray<T>(array: T[]): T[] {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
   
   // Function to start the game and redirect all players
   const startGame = () => {
+    generateAndUploadCards();
     router.push(`/codenames/playgame/${lobbyCode}`);
   };
 
