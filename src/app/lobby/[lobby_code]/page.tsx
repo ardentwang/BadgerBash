@@ -17,7 +17,7 @@ interface Lobby {
   created_at: string,
   updated_at?: string,
   is_public: boolean,
-  game_start: boolean
+  game_started: boolean
 }
 
 interface UserInfo {
@@ -44,7 +44,11 @@ interface FormattedPlayer {
 const LobbyPage = () => {
   // get the lobby code to push to next game as well as match supabase code
   const params = useParams();
-  const lobbyCode = params.lobby_code;
+  const rawLobbyCode = params.lobby_code;
+  // Check if rawLobbyCode exists before processing it
+  const arrayLobbyCode = rawLobbyCode ? (Array.isArray(rawLobbyCode) ? rawLobbyCode[0] : rawLobbyCode) : "";
+  const lobbyCode = arrayLobbyCode ? parseInt(arrayLobbyCode, 10) : 0; 
+  console.log(lobbyCode)
   const [players, setPlayers] = useState<FormattedPlayer[]>([]);
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [loading, setLoading] = useState(true);
@@ -251,9 +255,10 @@ const LobbyPage = () => {
             console.log('Lobby update received:', payload);
             
             // Update local state with new data
-            setLobby(payload.new);
+            setLobby(payload.new as Lobby);
             
             // Check if game has started and redirect if it has
+            // @ts-expect-error game_started will always exist as a property from lobby table payload
             if (payload.new.game_started === true) {
               console.log("Game started, redirecting to game page");
               router.push(`/codenames/joingame/${lobbyCode}`);

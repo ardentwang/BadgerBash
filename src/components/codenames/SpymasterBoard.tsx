@@ -1,61 +1,176 @@
-import React, { useState } from "react";
+// SpymasterBoard.tsx
+"use client"
+
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-interface SpymasterBoardProps {
-  words: Array<{ word: string; color: string }>;
-  team: string;
-  onGiveClue: (clue: string) => void;
+interface WordWithColor {
+  word: string;
+  color: string;
+  revealed: boolean;
 }
 
-const SpymasterBoard = ({ words, team, onGiveClue }: SpymasterBoardProps) => {
-  const [clue, setClue] = useState("");
-  
-  return (
-    <div className="flex flex-col items-center">
-      <h2 className="text-lg font-bold mb-4">Spymaster View - {team} Team</h2>
+interface SpymasterBoardProps {
+  words: WordWithColor[] | null;
+  team: string;
+  onGiveClue: (clue: string, clueNumber: number) => void;
+  canInteract: boolean;
+}
+
+const SpymasterBoard: React.FC<SpymasterBoardProps> = ({
+  words,
+  team,
+  onGiveClue,
+  canInteract
+}) => {
+  const [clue, setClue] = useState('');
+  const [clueNumber, setClueNumber] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmitClue = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Check if it's the player's turn
+    if (!canInteract) {
+      setError("It's not your turn to give a clue");
+      return;
+    }
+    
+    // Validate input
+    if (!clue.trim()) {
+      setError("Please enter a clue");
+      return;
+    }
+    
+    if (!clueNumber) {
+      setError("Please select a number");
+      return;
+    }
+    
+    setError(null);
+    setIsSubmitting(true);
+    
+    try {
+      console.log(`🎲 Submitting clue: "${clue}" with number: ${clueNumber} for team: ${team}`);
       
-      {/* Spymaster game board - always shows colors */}
-      <div className="grid grid-cols-5 gap-2 bg-orange-900 p-4 rounded-lg mb-4">
-        {words.map((tile, index) => (
-          <div
+      // Call the parent component callback to handle the clue submission
+      onGiveClue(clue, parseInt(clueNumber));
+      
+      // Reset form
+      setClue('');
+      setClueNumber('');
+      
+    } catch (err) {
+      console.error('❌ Exception while submitting clue:', err);
+      setError("An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getColorClass = (color: string) => {
+    switch (color) {
+      case 'red': return 'bg-red-500 text-white';
+      case 'blue': return 'bg-blue-500 text-white';
+      case 'black': return 'bg-black text-white';
+      case 'yellow': return 'bg-yellow-200';
+      default: return 'bg-gray-200';
+    }
+  };
+
+  if (!words) {
+    return (
+      <div className="text-center p-4">
+        <p>Loading words...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col w-full max-w-4xl">
+      {/* Word Grid - Main Focus */}
+      <div className="grid grid-cols-5 gap-2 mb-4">
+        {words.map((word, index) => (
+          <div 
             key={index}
-            className={`w-28 h-16 rounded-md font-bold flex items-center justify-center 
-            ${
-              tile.color === "blue" 
-                ? "bg-blue-500 text-white" 
-                : tile.color === "red" 
-                  ? "bg-red-500 text-white" 
-                  : tile.color === "black" 
-                    ? "bg-black text-white" 
-                    : "bg-gray-200 text-black"
-            }`}
+            className={`${getColorClass(word.color)} p-4 h-20 flex items-center justify-center rounded shadow text-center font-semibold ${word.revealed ? 'opacity-60' : ''}`}
           >
-            {tile.word}
+            {word.word}
+            {word.revealed && <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded text-white font-bold text-xs">REVEALED</div>}
           </div>
         ))}
       </div>
       
-      {/* Clue input */}
-      <div className="w-full flex space-x-2 mt-4">
-        <Input
-          type="text"
-          value={clue}
-          onChange={(e) => setClue(e.target.value)}
-          placeholder="Enter your clue"
-          className="flex-grow"
-        />
-        <Button 
-          onClick={() => {
-            if (clue.trim()) {
-              onGiveClue(clue);
-              setClue("");
-            }
-          }}
-          className="bg-yellow-400 text-black font-bold"
-        >
-          Give Clue
-        </Button>
+      {/* Compact Clue Form - At Bottom */}
+      <div className="mt-4 p-3 bg-white rounded-lg shadow-md">
+        {error && (
+          <div className="text-red-500 text-sm p-2 mb-2 bg-red-50 rounded-md border border-red-200">
+            {error}
+          </div>
+        )}
+        
+        {!canInteract && (
+          <div className="bg-yellow-100 p-2 mb-2 rounded-md text-center">
+            <p className="font-medium">Waiting for your turn to give a clue</p>
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmitClue} className="flex items-end space-x-2">
+          <div className="flex-grow">
+            <label htmlFor="clue" className="block text-sm font-medium text-gray-700 mb-1">
+              One-word clue:
+            </label>
+            <Input
+              id="clue"
+              value={clue}
+              onChange={(e) => setClue(e.target.value)}
+              placeholder="Enter clue"
+              className="w-full text-gray-800 bg-white"
+              maxLength={30}
+              style={{ color: '#1a202c' }}
+              disabled={!canInteract}
+            />
+          </div>
+          
+          <div className="w-32">
+            <label htmlFor="clueNumber" className="block text-sm font-medium text-gray-700 mb-1">
+              # of words:
+            </label>
+            <Select 
+              value={clueNumber} 
+              onValueChange={setClueNumber}
+              disabled={!canInteract}
+            >
+              <SelectTrigger id="clueNumber" className="text-gray-800 bg-white" style={{ color: '#1a202c' }}>
+                <SelectValue placeholder="Select" className="text-gray-800" />
+              </SelectTrigger>
+              <SelectContent className="bg-white">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                  <SelectItem key={num} value={num.toString()} className="text-gray-800">
+                    {num}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <Button 
+            type="submit" 
+            className={`bg-${team}-500 hover:bg-${team}-600 text-white`}
+            disabled={isSubmitting || !clue.trim() || !clueNumber || !canInteract}
+          >
+            {isSubmitting ? 'Sending...' : 'Give Clue'}
+          </Button>
+        </form>
       </div>
     </div>
   );
