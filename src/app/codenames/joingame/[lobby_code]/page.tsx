@@ -201,20 +201,20 @@ const CodenamesLobby = () => {
         throw new Error("Failed to fetch the CSV file");
       }
       const csvText = await response.text();
-
+  
       // Parse the CSV content
       const words = Papa.parse<string[]>(csvText, {
         header: false, // Adjust based on your CSV structure
         skipEmptyLines: true,
       }).data.flat(); // Flatten the array if necessary
-
+  
       if (words.length < 25) {
         throw new Error('Not enough words in the word bank');
       }
-
+  
       // Step 3: Shuffle and select 25 words
       const selectedWords = shuffleArray(words).slice(0, 25);
-
+  
       // Step 4: Assign colors
       const colors = [
         ...Array(8).fill('red'),
@@ -223,23 +223,27 @@ const CodenamesLobby = () => {
         'black'
       ];
       const shuffledColors = shuffleArray(colors);
-
+  
       // Step 5: Create word-color mapping with revealed state
-      const wordColorMapping = {};
+      // Define the type for the word color mapping
+      type WordColorMapping = Record<string, [string, boolean]>;
+      const wordColorMapping: WordColorMapping = {};
+      
       selectedWords.forEach((word, index) => {
         wordColorMapping[word] = [shuffledColors[index], false]; // [color, revealed]
       });
-
+  
       // Step 6: Insert into Supabase
       const { error } = await supabase
         .from('codenames_games')
         .upsert([{
           lobby_code: lobbyCode,
-          words: wordColorMapping
+          words: wordColorMapping,
+          current_role_turn: "red_spymaster" // Set initial turn to red_spymaster
         }]);
-
+  
       if (error) throw error;
-
+  
       console.log('Inserted successfully!', wordColorMapping);
     } catch (err) {
       console.error('Error:', err);
@@ -263,14 +267,14 @@ const CodenamesLobby = () => {
   };
 
   // Helper function to get team color from role
-  const getTeamFromRole = (role: string) => {
-    return role.startsWith('red_') ? 'red' : 'blue';
-  };
+  //const getTeamFromRole = (role: string) => {
+  //  return role.startsWith('red_') ? 'red' : 'blue';
+  //};
 
   // Helper function to get role type from role
-  const getRoleTypeFromRole = (role: string) => {
-    return role.endsWith('_spymaster') ? 'spymaster' : 'operative';
-  };
+  //const getRoleTypeFromRole = (role: string) => {
+  //  return role.endsWith('_spymaster') ? 'spymaster' : 'operative';
+  //};
 
   return (
     <div className="flex flex-col min-h-screen bg-red-400">

@@ -1,3 +1,4 @@
+// OperativeBoard.tsx
 import React from "react";
 
 interface OperativeBoardProps {

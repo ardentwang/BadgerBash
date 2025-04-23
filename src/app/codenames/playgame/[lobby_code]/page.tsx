@@ -12,8 +12,17 @@ import GameLog from "@/components/codenames/GameLog";
 
 // Define the role type enum
 type RoleType = "red_spymaster" | "red_operative" | "blue_spymaster" | "blue_operative";
+type TeamColor = "red" | "blue";
+type RoleCategory = "spymaster" | "operative";
 
-// Define turn order
+// Define word interface
+interface WordData {
+  word: string;
+  color: string;
+  revealed: boolean;
+}
+
+// Define the turn order
 const TURN_ORDER: RoleType[] = [
   "red_spymaster",
   "red_operative",
@@ -22,7 +31,7 @@ const TURN_ORDER: RoleType[] = [
 ];
 
 // Placeholder words to use until real words are loaded from Supabase
-const placeholderWords = Array(25).fill({}).map((_, i) => ({ 
+const placeholderWords: WordData[] = Array(25).fill(null).map((_, i) => ({ 
   word: `Word ${i+1}`, 
   color: "unknown",
   revealed: false
@@ -34,6 +43,15 @@ type PlayerInfo = {
   role: RoleType;
   lobby_code: number;
 };
+
+// Define game data structure from Supabase
+interface GameData {
+  clue?: string;
+  clue_number?: number;
+  latest_move?: string;
+  current_role_turn?: RoleType;
+  words?: Record<string, [string, boolean]>;
+}
 
 const CodenamesGame = () => {
   const params = useParams();
@@ -60,21 +78,21 @@ const CodenamesGame = () => {
   const [currentClue, setCurrentClue] = useState<{ clue: string; number: number } | null>(null);
 
   // Words and revealed state
-  const [wordsList, setWordsList] = useState<{ word: string; color: string; revealed: boolean }[] | null>(null);
+  const [wordsList, setWordsList] = useState<WordData[] | null>(null);
   
   // Additional state to track game progression
   const [wordSelectionHistory, setWordSelectionHistory] = useState<string[]>([]);
   const [remainingRedWords, setRemainingRedWords] = useState(0);
   const [remainingBlueWords, setRemainingBlueWords] = useState(0);
   const [gameOver, setGameOver] = useState(false);
-  const [winner, setWinner] = useState<"red" | "blue" | null>(null);
+  const [winner, setWinner] = useState<TeamColor | null>(null);
 
   // Helper functions for role/team
-  const getTeamFromRole = (role: RoleType): "red" | "blue" => {
+  const getTeamFromRole = (role: RoleType): TeamColor => {
     return role.startsWith("red_") ? "red" : "blue";
   };
 
-  const getRoleTypeFromRole = (role: RoleType): "spymaster" | "operative" => {
+  const getRoleTypeFromRole = (role: RoleType): RoleCategory => {
     return role.includes("spymaster") ? "spymaster" : "operative";
   };
 
@@ -197,28 +215,30 @@ const CodenamesGame = () => {
         (payload) => {
           console.log("🎲 Real-time game update received:", payload);
           if (payload.new) {
+            const newData = payload.new as GameData;
+            
             // Update current turn if available
-            if (payload.new.current_role_turn) {
-              setCurrentTurn(payload.new.current_role_turn as RoleType);
-              console.log(`🎮 Turn updated to: ${payload.new.current_role_turn}`);
+            if (newData.current_role_turn) {
+              setCurrentTurn(newData.current_role_turn);
+              console.log(`🎮 Turn updated to: ${newData.current_role_turn}`);
             }
             
             // Update current clue if available
-            if (payload.new.clue && payload.new.clue_number) {
+            if (newData.clue && newData.clue_number) {
               setCurrentClue({
-                clue: payload.new.clue,
-                number: payload.new.clue_number
+                clue: newData.clue,
+                number: newData.clue_number
               });
             }
             
             // Update game log with latest move
-            if (payload.new.latest_move) {
-              setGameLog(prev => [payload.new.latest_move, ...prev]);
+            if (newData.latest_move) {
+              setGameLog(prev => [newData.latest_move, ...prev]);
             }
             
             // If words have been updated, reload them
-            if (payload.new.words) {
-              processWordsData(payload.new.words);
+            if (newData.words) {
+              processWordsData(newData.words);
             }
           }
         }
@@ -253,15 +273,15 @@ const CodenamesGame = () => {
   }, [userId, lobbyCode]);
 
   // Process the words data from Supabase
-  const processWordsData = (wordsData) => {
+  const processWordsData = (wordsData: Record<string, string | [string, boolean]>) => {
     console.log("🎮 Processing words data...");
     
     try {
       // Convert the word-color mapping to our required format
-      const processedWords = Object.entries(wordsData).map(([word, data]) => {
+      const processedWords: WordData[] = Object.entries(wordsData).map(([word, data]) => {
         // Handle both formats: [color, revealed] array or string color
         const isArray = Array.isArray(data);
-        const color = isArray ? data[0] : data;
+        const color = isArray ? data[0] : data as string;
         const revealed = isArray ? data[1] : false;
         
         return {
@@ -291,7 +311,7 @@ const CodenamesGame = () => {
   };
   
   // Check if the game is over
-  const checkGameOverConditions = (words) => {
+  const checkGameOverConditions = (words: WordData[]) => {
     // Check if all red words are revealed
     const allRedRevealed = words.filter(w => w.color === "red").every(w => w.revealed);
     if (allRedRevealed) {
@@ -378,7 +398,7 @@ const CodenamesGame = () => {
   };
 
   // Handle selecting a word (for operative)
-  const handleSelectWord = async (word, index) => {
+  const handleSelectWord = async (word: WordData, index: number) => {
     // Only allow if it's the operative's turn
     if (!isYourTurn() || !playerRole?.includes("operative")) {
       console.log("❌ Not your turn or you're not an operative");
@@ -412,7 +432,7 @@ const CodenamesGame = () => {
       // Incorrect pick, turn goes to other team's spymaster
       nextTurn = team === "red" ? "blue_spymaster" : "red_spymaster";
       console.log(`❌ Incorrect pick - turn passes to ${nextTurn}`);
-    } else if (currentClue && parseInt(currentClue.number.toString()) <= 0) {
+    } else if (currentClue && currentClue.number <= 0) {
       // Used all guesses, turn passes to other team
       nextTurn = team === "red" ? "blue_spymaster" : "red_spymaster";
       console.log(`✅ Used all guesses - turn passes to ${nextTurn}`);
@@ -423,9 +443,20 @@ const CodenamesGame = () => {
     }
     
     try {
+      if (!wordsList) {
+        console.error("❌ wordsList is null, cannot update");
+        return;
+      }
+      
       // Make a copy of the words to update
-      const updatedWords = JSON.parse(JSON.stringify(wordsList));
+      const updatedWords = JSON.parse(JSON.stringify(wordsList)) as WordData[];
       const wordIndex = updatedWords.findIndex(w => w.word === word.word);
+      
+      if (wordIndex === -1) {
+        console.error(`❌ Word "${word.word}" not found in updatedWords`);
+        return;
+      }
+      
       updatedWords[wordIndex].revealed = true;
       
       // Update the clue number if correct pick
@@ -434,15 +465,18 @@ const CodenamesGame = () => {
         updatedClueNumber = currentClue.number - 1;
       }
       
+      // Create the words object for Supabase
+      const wordsObject: Record<string, [string, boolean]> = {};
+      updatedWords.forEach(w => {
+        wordsObject[w.word] = [w.color, w.revealed];
+      });
+      
       // Update database with the selected word, turn and clue number
       const { data, error } = await supabase
         .from('codenames_games')
         .upsert({
           lobby_code: lobbyCode,
-          words: updatedWords.reduce((acc, w) => {
-            acc[w.word] = [w.color, w.revealed];
-            return acc;
-          }, {}),
+          words: wordsObject,
           latest_move: logMessage,
           current_role_turn: nextTurn,
           clue_number: updatedClueNumber
@@ -465,7 +499,7 @@ const CodenamesGame = () => {
       if (currentClue && currentClue.number > 0) {
         setCurrentClue({
           ...currentClue,
-          number: updatedClueNumber
+          number: updatedClueNumber as number
         });
       }
       

@@ -1,5 +1,6 @@
 "use strict";
 exports.__esModule = true;
+// OperativeBoard.tsx
 var react_1 = require("react");
 var OperativeBoard = function (_a) {
     var words = _a.words, team = _a.team, onSelectWord = _a.onSelectWord, canInteract = _a.canInteract;
