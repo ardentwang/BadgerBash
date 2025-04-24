@@ -38,12 +38,9 @@ const CodenamesLobby = () => {
   const lobbyCode = arrayLobbyCode ? parseInt(arrayLobbyCode, 10) : 0; 
   const [players, setPlayers] = useState<FormattedPlayer[]>([]);
   const [loading, setLoading] = useState(false);
-<<<<<<< HEAD
-  const [userRole, setUserRole] = useState(null);
+  //const [userRole, setUserRole] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-=======
   const [userRole, setUserRole] = useState<string | null>(null);
->>>>>>> 83bd63d1407db06fb536af00acfd389d85bbfb4d
   const router = useRouter();
   const { user } = useAuth();
   const userId = user?.id;
@@ -268,10 +265,8 @@ const CodenamesLobby = () => {
     router.push(`/codenames/playgame/${lobbyCode}`);
   };
 
-<<<<<<< HEAD
   const openModal = () => setModalOpen(true);
   const closeModal = () => setModalOpen(false);
-=======
   // Helper function to get team color from role
   const getTeamFromRole = (role: string) => {
     return role.startsWith('red_') ? 'red' : 'blue';
@@ -281,7 +276,6 @@ const CodenamesLobby = () => {
   const getRoleTypeFromRole = (role: string) => {
     return role.endsWith('_spymaster') ? 'spymaster' : 'operative';
   };
->>>>>>> 83bd63d1407db06fb536af00acfd389d85bbfb4d
 
   return (
     <div className="flex flex-col min-h-screen bg-red-400">
