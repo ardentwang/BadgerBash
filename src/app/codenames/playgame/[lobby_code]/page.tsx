@@ -746,7 +746,7 @@ const CodenamesGame = () => {
 
         {/* Right Panel - Blue Team */}
         <TeamPanel 
-          color="red" 
+          color="blue" 
           players={players.filter(p => p.role.startsWith('blue_'))} 
           userId={userId || ""} // Provide empty string as fallback
           score={remainingRedWords}
