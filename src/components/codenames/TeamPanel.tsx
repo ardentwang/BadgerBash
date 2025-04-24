@@ -1,15 +1,15 @@
-// Updated TeamPanel.tsx
 import React from "react";
 import { Card } from "@/components/ui/card";
 
 interface TeamPanelProps {
   color: "red" | "blue";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   players: Array<any>;
   userId: string;
   score?: number;
 }
 
-const TeamPanel = ({ color, players, userId, score }: TeamPanelProps) => {
+const TeamPanel: React.FC<TeamPanelProps> = ({ color, players, userId, score }) => {
   const bgColor = color === "red" ? "bg-red-700" : "bg-blue-700";
   const rolePrefix = `${color}_`;
   

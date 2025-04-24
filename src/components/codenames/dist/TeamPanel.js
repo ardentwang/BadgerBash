@@ -1,6 +1,5 @@
 "use strict";
 exports.__esModule = true;
-// Updated TeamPanel.tsx
 var react_1 = require("react");
 var card_1 = require("@/components/ui/card");
 var TeamPanel = function (_a) {
