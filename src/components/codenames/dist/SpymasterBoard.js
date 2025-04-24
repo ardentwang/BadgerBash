@@ -1,4 +1,3 @@
-// SpymasterBoard.tsx
 "use client";
 "use strict";
 exports.__esModule = true;
@@ -60,9 +59,11 @@ var SpymasterBoard = function (_a) {
             react_1["default"].createElement("p", null, "Loading words...")));
     }
     return (react_1["default"].createElement("div", { className: "flex flex-col w-full max-w-4xl" },
-        react_1["default"].createElement("div", { className: "grid grid-cols-5 gap-2 mb-4" }, words.map(function (word, index) { return (react_1["default"].createElement("div", { key: index, className: getColorClass(word.color) + " p-4 h-20 flex items-center justify-center rounded shadow text-center font-semibold " + (word.revealed ? 'opacity-60' : '') },
+        react_1["default"].createElement("div", { className: "grid grid-cols-5 gap-2 mb-4" }, words.map(function (word, index) { return (react_1["default"].createElement("div", { key: index, className: getColorClass(word.color) + " p-4 h-20 relative flex items-center justify-center rounded shadow text-center font-semibold" },
             word.word,
-            word.revealed && react_1["default"].createElement("div", { className: "absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded text-white font-bold text-xs" }, "REVEALED"))); })),
+            word.revealed && (react_1["default"].createElement("div", { className: "absolute top-1 right-1 w-5 h-5 bg-white bg-opacity-90 rounded-full flex items-center justify-center" },
+                react_1["default"].createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-3 w-3 text-green-600", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor" },
+                    react_1["default"].createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 3, d: "M5 13l4 4L19 7" })))))); })),
         react_1["default"].createElement("div", { className: "mt-4 p-3 bg-white rounded-lg shadow-md" },
             error && (react_1["default"].createElement("div", { className: "text-red-500 text-sm p-2 mb-2 bg-red-50 rounded-md border border-red-200" }, error)),
             !canInteract && (react_1["default"].createElement("div", { className: "bg-yellow-100 p-2 mb-2 rounded-md text-center" },
