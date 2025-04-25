@@ -5,10 +5,12 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/context/AuthContext"
 import { supabase } from '@/lib/supabase';
 import Papa from 'papaparse';
+// Import the PlayerCard component we just created
+import PlayerCard from "@/components/PlayerCard"; // Adjust the import path as needed
 
 interface CodenamesPlayer {
   id: string;
@@ -49,6 +51,7 @@ const CodenamesLobby = () => {
   const { user } = useAuth();
   const userId = user?.id;
   const userName = user?.user_metadata.username;
+  const avatarUrl = user?.user_metadata.avatar_url || '/avatars/default.png';
 
   // Function to fetch players in the lobby
   const fetchPlayers = async () => {
@@ -366,10 +369,6 @@ const CodenamesLobby = () => {
   };
 
   const openModal = () => setModalOpen(true);
-<<<<<<< HEAD
-  const closeModal = () => setModalOpen(false);
-=======
->>>>>>> bcd96b2d729a0edb77f85e8eca05268f98f76be9
   // Helper function to get team color from role
   //const getTeamFromRole = (role: string) => {
   //  return role.startsWith('red_') ? 'red' : 'blue';
@@ -401,10 +400,10 @@ const CodenamesLobby = () => {
                 🕵️ Each team has a <span className="font-bold">Spymaster</span> who gives one-word clues tied to multiple words on the board.
               </p>
               <p className="text-base text-white leading-relaxed">
-                🧩 The clue includes a word + number (e.g. <span className="italic">“Ocean, 2”</span>) hinting at two words on the board that relate to the word <span className="italic">`&quot;`Ocean`&quot;`</span>.
+                🧩 The clue includes a word + number (e.g. <span className="italic">`&quot;`Ocean, 2`&quot;`</span>) hinting at two words on the board that relate to the word <span className="italic">`&quot;`Ocean`&quot;`</span>.
               </p>
               <p className="text-base text-white leading-relaxed">
-                🧠 Operatives click on tiles to guess the correct words. Guess right, and the tile turns your team’s color!
+                🧠 Operatives click on tiles to guess the correct words. Guess right, and the tile turns your team`&apos;`s color!
               </p>
               <p className="text-base text-white leading-relaxed">
                 🚫 If you hit a <span className="italic">neutral card</span> (a white card), your turn ends. If you hit the other team`&apos;`s word, you help them!
@@ -417,9 +416,19 @@ const CodenamesLobby = () => {
               </p>
             </DialogContent>
           </Dialog>
-          <span className="flex items-center bg-gray-200 text-black px-3 py-1 rounded-lg">
-            {userName || "User"} <User className="ml-4" size={10} />
-          </span>
+          
+          {/* Updated user display in header with shadcn Avatar */}
+          <div className="flex items-center bg-gray-200 text-black px-3 py-1 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={avatarUrl} alt="Your avatar" />
+                <AvatarFallback>
+                  {userName ? userName.substring(0, 2).toUpperCase() : "U"}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium">{userName || "User"}</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -432,10 +441,16 @@ const CodenamesLobby = () => {
             {players
               .filter(player => player.role === 'red_operative')
               .map(player => (
-                <div key={player.user_id} className="text-sm">{player.user_id === userId ? 'You' : player.user_id}</div>
+                <PlayerCard 
+                  key={player.user_id}
+                  userId={player.user_id}
+                  username={player.username}
+                  avatarUrl={player.avatar_url}
+                  isCurrentUser={player.user_id === userId}
+                />
               ))}
             {players.filter(player => player.role === 'red_operative').length === 0 && (
-              <p className="text-sm">-</p>
+              <p className="text-sm">No players yet</p>
             )}
           </div>
           <Button
@@ -453,10 +468,16 @@ const CodenamesLobby = () => {
             {players
               .filter(player => player.role === 'red_spymaster')
               .map(player => (
-                <div key={player.user_id} className="text-sm">{player.user_id === userId ? 'You' : player.user_id}</div>
+                <PlayerCard 
+                  key={player.user_id}
+                  userId={player.user_id}
+                  username={player.username}
+                  avatarUrl={player.avatar_url}
+                  isCurrentUser={player.user_id === userId}
+                />
               ))}
             {players.filter(player => player.role === 'red_spymaster').length === 0 && (
-              <p className="text-sm">-</p>
+              <p className="text-sm">No players yet</p>
             )}
           </div>
           <Button
@@ -508,10 +529,16 @@ const CodenamesLobby = () => {
             {players
               .filter(player => player.role === 'blue_operative')
               .map(player => (
-                <div key={player.user_id} className="text-sm">{player.user_id === userId ? 'You' : player.user_id}</div>
+                <PlayerCard 
+                  key={player.user_id}
+                  userId={player.user_id}
+                  username={player.username}
+                  avatarUrl={player.avatar_url}
+                  isCurrentUser={player.user_id === userId}
+                />
               ))}
             {players.filter(player => player.role === 'blue_operative').length === 0 && (
-              <p className="text-sm">-</p>
+              <p className="text-sm">No players yet</p>
             )}
           </div>
           <Button
@@ -529,10 +556,16 @@ const CodenamesLobby = () => {
             {players
               .filter(player => player.role === 'blue_spymaster')
               .map(player => (
-                <div key={player.user_id} className="text-sm">{player.user_id === userId ? 'You' : player.user_id}</div>
+                <PlayerCard 
+                  key={player.user_id}
+                  userId={player.user_id}
+                  username={player.username}
+                  avatarUrl={player.avatar_url}
+                  isCurrentUser={player.user_id === userId}
+                />
               ))}
             {players.filter(player => player.role === 'blue_spymaster').length === 0 && (
-              <p className="text-sm">-</p>
+              <p className="text-sm">No players yet</p>
             )}
           </div>
           <Button
