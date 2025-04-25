@@ -15,7 +15,7 @@ export default function Home() {
           <defs>
           <path id="curve" d="M 50,150 Q 300,20 550,150" />
           <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="black" flood-opacity="0.6" />
+            <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="black" floodOpacity="0.6" />
           </filter>
           </defs>
 
