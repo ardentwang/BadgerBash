@@ -1,14 +1,14 @@
-"use client"
+'use client'
+
 import { useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase"
 
-export default function CreateLobby() {
+export default function GameButtons() {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
-  const params = useParams();
-  const lobby_code = params.code;
   
   const handleCreateLobby = async () => {
     setIsCreating(true);
@@ -52,7 +52,7 @@ export default function CreateLobby() {
       }
       
       // Immediately redirect to the lobby page
-      router.push(`/lobby/${lobby_code}`);
+      router.push(`/lobby/${code}`);
       
     } catch (err) {
       console.error('Error in lobby creation process:', err);
@@ -62,13 +62,25 @@ export default function CreateLobby() {
   };
 
   return (
-    <Button 
-      className="w-full text-md" 
-      size="lg"
-      onClick={handleCreateLobby}
-      disabled={isCreating}
-    >
-      {isCreating ? "Creating..." : "Create Lobby"}
-    </Button>
-  );
+    <div className="flex flex-col sm:flex-row gap-6 mb-10">
+      {/* Join Button */}
+      <Button 
+        className="w-64 h-14 text-lg bg-foreground text-background hover:bg-foreground/90"
+        asChild
+      >
+        <Link href="/join-lobby">
+          Join Game
+        </Link>
+      </Button>
+
+      {/* Create Button */}
+      <Button 
+        className="w-64 h-14 text-lg bg-foreground text-background hover:bg-foreground/90"
+        onClick={handleCreateLobby}
+        disabled={isCreating}
+      >
+        {isCreating ? "Creating..." : "Create Game Lobby"}
+      </Button>
+    </div>
+  )
 }

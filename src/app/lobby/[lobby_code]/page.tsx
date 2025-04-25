@@ -52,6 +52,9 @@ const LobbyPage = () => {
   const [players, setPlayers] = useState<FormattedPlayer[]>([]);
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [loading, setLoading] = useState(true);
+  // Add state for editable lobby name
+  const [editableName, setEditableName] = useState("");
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
   const { user } = useAuth();
   const userID = user?.id;
   const router = useRouter();
@@ -173,6 +176,33 @@ const LobbyPage = () => {
     }
   };
   
+  // Function to update the lobby name
+  const updateLobbyName = async () => {
+    if (!lobbyCode || !editableName.trim() || editableName === lobby?.name) return;
+    
+    try {
+      setIsUpdatingName(true);
+      
+      const { error } = await supabase
+        .from('lobbies')
+        .update({ 
+          name: editableName,
+          updated_at: new Date().toISOString()
+        })
+        .eq('lobby_code', lobbyCode);
+        
+      if (error) throw error;
+      
+      console.log("Lobby name updated successfully");
+      // Update local state to reflect the change
+      setLobby(prev => prev ? {...prev, name: editableName} : null);
+    } catch (err) {
+      console.error('Error updating lobby name:', err);
+    } finally {
+      setIsUpdatingName(false);
+    }
+  };
+  
   // Handle starting the game
   const handleStartGame = async () => {
     try {
@@ -236,6 +266,8 @@ const LobbyPage = () => {
         
         //
         setLobby(lobbyData as Lobby);
+        // Initialize editable name state with current lobby name
+        setEditableName(lobbyData.name);
         
         // 2. Add current player to the lobby
         await addPlayerToLobby();
@@ -256,6 +288,8 @@ const LobbyPage = () => {
             
             // Update local state with new data
             setLobby(payload.new as Lobby);
+            // Update editable name with the new lobby name
+            setEditableName((payload.new as Lobby).name);
             
             // Check if game has started and redirect if it has
             // @ts-expect-error game_started will always exist as a property from lobby table payload
@@ -328,24 +362,28 @@ const LobbyPage = () => {
   return (
     <div>
       <div className="min-h-screen w-full flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
+        <Card className="w-full max-w-4xl">
           <CardHeader className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="lobbyName" className="text-sm font-medium">
-                Lobby Name
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  id="lobbyName"
-                  value={lobby?.name || ""}
-                  disabled={true}
-                />
-                <Button
-                  variant="outline"
-                  disabled={true}
-                >
-                  Update
-                </Button>
+            <div className="flex justify-between items-center">
+              <div className="space-y-2 flex-grow">
+                <label htmlFor="lobbyName" className="text-sm font-medium">
+                  Lobby Name
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    id="lobbyName"
+                    value={editableName}
+                    onChange={(e) => setEditableName(e.target.value)}
+                    disabled={!isCurrentUserHost()}
+                  />
+                  <Button
+                    variant="outline"
+                    disabled={!isCurrentUserHost() || isUpdatingName || editableName === lobby?.name || !editableName.trim()}
+                    onClick={updateLobbyName}
+                  >
+                    {isUpdatingName ? "Updating..." : "Update"}
+                  </Button>
+                </div>
               </div>
             </div>
             <div className="space-y-2">
@@ -360,29 +398,40 @@ const LobbyPage = () => {
           <CardContent>
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">
-                Players ({players.length}/4)
+                Players ({players.length}/8)
               </h3>
-              <div className="grid grid-cols-2 gap-4">
-                {/* Map through 4 player slots */}
-                {Array.from({ length: 4 }).map((_, index) => (
+              <div className="grid grid-cols-4 gap-4">
+                {/* Map through 8 player slots */}
+                {Array.from({ length: 8 }).map((_, index) => (
                   <PlayerSlot 
                     key={index}
                     player={players[index] || null}
                     isCurrentUser={players[index]?.user_id === userID}
+                    isHost={players[index]?.is_host || false} // Pass host status to slot
                   />
                 ))}
               </div>
               
               <div className="flex gap-4 mt-6 pt-4 border-t">
+                {isCurrentUserHost() ? (
+                  // Host sees Start Game button
+                  <Button 
+                    className="w-full hover:bg"
+                    onClick={handleStartGame}
+                    disabled={players.length < 2} // Require at least 2 players
+                  >
+                    Start Game
+                  </Button>
+                ) : (
+                  // Non-hosts see Wait For Host button
+                  <Button 
+                    className="w-full bg-400 cursor-not-allowed"
+                    disabled={true}
+                  >
+                    Wait For Host...
+                  </Button>
+                )}
                 <Button 
-                  className="w-full"
-                  onClick={handleStartGame}
-                  disabled={!isCurrentUserHost()}
-                >
-                  Start Game
-                </Button>
-                <Button 
-                  variant="outline" 
                   className="w-full"
                   onClick={handleLeaveLobby}
                 >
@@ -395,6 +444,6 @@ const LobbyPage = () => {
       </div>
     </div>
   );
-};
+}
 
 export default LobbyPage;

@@ -37,9 +37,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 exports.__esModule = true;
+var react_1 = require("react");
 var AuthContext_1 = require("@/context/AuthContext");
 var supabase_1 = require("@/lib/supabase");
-var react_1 = require("react");
+var image_1 = require("next/image");
 var avatarImages = [
     { file: 'party.png', label: 'Party' },
     { file: 'programmer.png', label: 'Programmer' },
@@ -48,63 +49,74 @@ var avatarImages = [
 ];
 function AvatarSelector(_a) {
     var _this = this;
-    var currentAvatar = _a.currentAvatar, onSelect = _a.onSelect;
+    var currentAvatar = _a.currentAvatar, onSelect = _a.onSelect, onClose = _a.onClose;
     var _b = AuthContext_1.useAuth(), user = _b.user, refreshUser = _b.refreshUser;
-    var _c = react_1.useState(false), isUpdating = _c[0], setIsUpdating = _c[1];
+    var containerRef = react_1.useRef(null);
+    // Handle clicks outside the component
+    react_1.useEffect(function () {
+        if (!onClose)
+            return;
+        function handleClickOutside(event) {
+            if (containerRef.current && !containerRef.current.contains(event.target) && onClose) {
+                onClose();
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return function () {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [onClose]);
     var handleAvatarSelect = function (avatarUrl) { return __awaiter(_this, void 0, void 0, function () {
-        var error, error_1;
+        var authError, dbError, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!user || isUpdating)
+                    if (!user)
                         return [2 /*return*/];
-                    setIsUpdating(true);
                     _a.label = 1;
                 case 1:
-                    _a.trys.push([1, 5, 6, 7]);
-                    // Update user metadata in auth
+                    _a.trys.push([1, 5, , 6]);
                     return [4 /*yield*/, supabase_1.supabase.auth.updateUser({
-                            data: {
-                                avatar_url: avatarUrl
-                            }
+                            data: { avatar_url: avatarUrl }
                         })];
                 case 2:
-                    // Update user metadata in auth
-                    _a.sent();
+                    authError = (_a.sent()).error;
+                    if (authError) {
+                        console.error('Error updating auth metadata:', authError);
+                        return [2 /*return*/];
+                    }
                     return [4 /*yield*/, supabase_1.supabase
                             .from('users')
                             .update({ avatar_url: avatarUrl })
                             .eq('id', user.id)];
                 case 3:
-                    error = (_a.sent()).error;
-                    if (error) {
-                        console.error('Error updating avatar in database:', error);
+                    dbError = (_a.sent()).error;
+                    if (dbError) {
+                        console.error('Error updating user profile:', dbError);
                         return [2 /*return*/];
                     }
-                    // Call the onSelect callback to update UI
+                    // Call the provided onSelect function
                     onSelect(avatarUrl);
-                    // Refresh the user context to get updated metadata
+                    // Refresh user context
                     return [4 /*yield*/, refreshUser()];
                 case 4:
-                    // Refresh the user context to get updated metadata
+                    // Refresh user context
                     _a.sent();
-                    return [3 /*break*/, 7];
+                    return [3 /*break*/, 6];
                 case 5:
                     error_1 = _a.sent();
-                    console.error('Error updating avatar:', error_1);
-                    return [3 /*break*/, 7];
-                case 6:
-                    setIsUpdating(false);
-                    return [7 /*endfinally*/];
-                case 7: return [2 /*return*/];
+                    console.error('Error changing avatar:', error_1);
+                    return [3 /*break*/, 6];
+                case 6: return [2 /*return*/];
             }
         });
     }); };
-    return (React.createElement("div", { className: "grid grid-cols-2 gap-6 place-items-center" }, avatarImages.map(function (_a) {
+    return (React.createElement("div", { ref: containerRef, className: "grid grid-cols-2 gap-6 place-items-center" }, avatarImages.map(function (_a) {
         var file = _a.file, label = _a.label;
         var isSelected = currentAvatar.includes(file);
         return (React.createElement("div", { key: file, className: "flex flex-col items-center" },
-            React.createElement("img", { src: "/avatars/" + file, alt: label, className: "w-20 h-20 rounded-full cursor-pointer border-4 transition " + (isUpdating ? 'opacity-50' : '') + " " + (isSelected ? 'border-blue-500' : 'border-transparent hover:border-gray-300'), onClick: function () { return handleAvatarSelect("/avatars/" + file); } }),
+            React.createElement("div", { className: "relative w-20 h-20" },
+                React.createElement(image_1["default"], { src: "/avatars/" + file, alt: label, fill: true, sizes: "5rem", className: "rounded-full cursor-pointer border-4 transition object-cover " + (isSelected ? 'border-blue-500' : 'border-transparent hover:border-gray-300'), onClick: function () { return handleAvatarSelect("/avatars/" + file); } })),
             React.createElement("span", { className: "mt-1 text-sm font-medium text-gray-700" }, label)));
     })));
 }
