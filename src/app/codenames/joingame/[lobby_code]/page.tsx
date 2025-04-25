@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation'
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext"
 import { supabase } from '@/lib/supabase';
@@ -37,6 +38,7 @@ const CodenamesLobby = () => {
   const lobbyCode = arrayLobbyCode ? parseInt(arrayLobbyCode, 10) : 0; 
   const [players, setPlayers] = useState<FormattedPlayer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [canStartGame, setCanStartGame] = useState(false);
   const router = useRouter();
@@ -359,6 +361,8 @@ const CodenamesLobby = () => {
 
   };
 
+  const openModal = () => setModalOpen(true);
+  const closeModal = () => setModalOpen(false);
   // Helper function to get team color from role
   //const getTeamFromRole = (role: string) => {
   //  return role.startsWith('red_') ? 'red' : 'blue';
@@ -379,7 +383,33 @@ const CodenamesLobby = () => {
         </div>
         <h1 className="text-2xl font-bold text-center">Set up a game</h1>
         <div className="flex items-center space-x-2">
-          <Button className="bg-yellow-400 text-black px-3 py-1 rounded-lg">Rules</Button>
+          <Button className="bg-yellow-400 text-black px-3 py-1 rounded-lg" onClick={openModal}>Rules</Button>
+          <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+            <DialogContent className="p-6 space-y-3 text-sm text-white rounded-2xl">
+              <DialogTitle className="text-xl font-semibold text-white text-center">Rules!</DialogTitle>
+              <p className="text-base text-white leading-relaxed">
+                🔴 Two teams — Red and Blue — compete to guess their secret words first.
+              </p>
+              <p className="text-base text-white leading-relaxed">
+                🕵️ Each team has a <span className="font-bold">Spymaster</span> who gives one-word clues tied to multiple words on the board.
+              </p>
+              <p className="text-base text-white leading-relaxed">
+                🧩 The clue includes a word + number (e.g. <span className="italic">“Ocean, 2”</span>) hinting at two words on the board that relate to the word <span className="italic">"Ocean"</span>.
+              </p>
+              <p className="text-base text-white leading-relaxed">
+                🧠 Operatives click on tiles to guess the correct words. Guess right, and the tile turns your team’s color!
+              </p>
+              <p className="text-base text-white leading-relaxed">
+                🚫 If you hit a <span className="italic">neutral card</span> (a white card), your turn ends. If you hit the other team's word, you help them!
+              </p>
+              <p className="text-base text-white leading-relaxed">
+                ☠️ If you pick the <span className="font-bold">assassin</span> (a black card), your team instantly loses.
+              </p>
+              <p className="text-base text-white leading-relaxed">
+                🏆 First team to correctly identify all their agents <span className="font-bold">wins the game!</span>
+              </p>
+            </DialogContent>
+          </Dialog>
           <span className="flex items-center bg-gray-200 text-black px-3 py-1 rounded-lg">
             {userName || "User"} <User className="ml-4" size={10} />
           </span>
