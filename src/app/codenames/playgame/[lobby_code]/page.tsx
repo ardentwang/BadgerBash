@@ -521,6 +521,47 @@ const CodenamesGame = () => {
     }
   };
 
+  const handleEndTurn = async () => {
+    if (!isYourTurn() || !playerRole?.includes("operative")) {
+      console.log("❌ Not your turn or you're not an operative");
+      return;
+    }
+    
+    const team = getTeamFromRole(playerRole);
+    console.log(`🔄 ${team} Operative ends their turn`);
+    
+    // Create log message
+    const logMessage = `${team} Operative ended their turn`;
+    
+    // Calculate next turn (operative -> opponent's spymaster)
+    const nextTurn = team === "red" ? "blue_spymaster" : "red_spymaster";
+    
+    try {
+      // Update database with the new turn
+      const { error } = await supabase
+        .from('codenames_games')
+        .upsert({
+          lobby_code: lobbyCode,
+          latest_move: logMessage,
+          current_role_turn: nextTurn,
+          clue: null,
+          clue_number: null
+        }, {
+          onConflict: 'lobby_code'
+        });
+      
+      if (error) {
+        console.error("❌ Error ending turn in database:", error);
+        return;
+      }
+      
+      console.log("✅ Turn ended, passing to opponent's spymaster");
+      
+    } catch (err) {
+      console.error("❌ Exception while ending turn:", err);
+    }
+  };
+
   // Handle selecting a word (for operative)
   const handleSelectWord = async (word: WordData, index: number) => {
     // Only allow if it's the operative's turn
@@ -739,6 +780,7 @@ const CodenamesGame = () => {
                 team={team} 
                 onSelectWord={handleSelectWord}
                 canInteract={canInteract() && roleType === 'operative'}
+                onEndTurn={handleEndTurn}
               />
             </>
           )}

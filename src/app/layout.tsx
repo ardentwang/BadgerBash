@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Pixelify_Sans } from 'next/font/google'
+import localFont from 'next/font/local'
 import { AuthProvider } from '@/context/AuthContext';
 import { Toaster } from "@/components/ui/sonner"
 
 const pixelifySans = Pixelify_Sans({
   subsets: ['latin'],
   weight: ['400', '700'],
+  variable: '--font-pixelify-sans',
+})
+
+// Add the Minecraftia font
+const minecraftia = localFont({
+  src: '../../fonts/Minecraftia-Regular.ttf',
+  display: 'swap',
+  variable: '--font-minecraftia',
 })
 
 export const metadata: Metadata = {
@@ -22,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${pixelifySans.className}`}
+        className={`${pixelifySans.className} ${pixelifySans.variable} ${minecraftia.variable} font-minecraft`}
       >
         <AuthProvider>
           {children}
