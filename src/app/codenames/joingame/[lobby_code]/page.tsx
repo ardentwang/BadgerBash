@@ -38,12 +38,9 @@ const CodenamesLobby = () => {
   const lobbyCode = arrayLobbyCode ? parseInt(arrayLobbyCode, 10) : 0; 
   const [players, setPlayers] = useState<FormattedPlayer[]>([]);
   const [loading, setLoading] = useState(false);
-<<<<<<< HEAD
-  const [userRole, setUserRole] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
-=======
   const [userRole, setUserRole] = useState<string | null>(null);
->>>>>>> 83bd63d1407db06fb536af00acfd389d85bbfb4d
+  const [canStartGame, setCanStartGame] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
   const userId = user?.id;
@@ -104,24 +101,106 @@ const CodenamesLobby = () => {
       fetchPlayers();
       
       // Set up real-time subscription for player updates
-      const channel = supabase
-        .channel('codenames_roles_changes')
-        .on('postgres_changes', 
-          { 
-            event: '*', 
-            schema: 'public', 
-            table: 'codenames_roles',
+    (async () => {
+      await supabase
+      .channel('codenames_roles_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'codenames_roles',
+          filter: `lobby_code=eq.${lobbyCode}`
+        }, 
+        (payload) => {
+          console.log('Change received!', payload);
+          fetchPlayers();
+        }
+      )
+      .subscribe();})();
+
+    // Function to fetch current roles in the lobby
+    const checkRoles = async () => {
+      const { data, error } = await supabase
+        .from('codenames_roles')
+        .select('role')
+        .eq('lobby_code', lobbyCode);
+
+      if (error) {
+        console.error('Error fetching roles:', error);
+        return;
+      }
+
+      if (data.length < 4) {
+        setCanStartGame(false);
+        return;
+      }
+
+      // Count each role type
+      const roleCounts = {
+        red_spymaster: 0,
+        blue_spymaster: 0,
+        red_operative: 0,
+        blue_operative: 0
+      };
+
+      data.forEach(({ role }) => {
+        if (roleCounts.hasOwnProperty(role)) {
+          roleCounts[role as keyof typeof roleCounts]++;
+        }
+      });
+
+      const validSetup =
+        roleCounts.red_spymaster >= 1 &&
+        roleCounts.blue_spymaster >= 1 &&
+        roleCounts.red_operative >= 1 &&
+        roleCounts.blue_operative >= 1;
+
+      setCanStartGame(validSetup);
+    };
+
+    // Subscribe to changes in codenames_roles
+    (async () => {
+      await supabase
+      .channel('codenames_roles_subscription')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to inserts, updates, deletes
+          schema: 'public',
+          table: 'codenames_roles',
+          filter: `lobby_code=eq.${lobbyCode}`
+        },
+        async () => {
+          checkRoles(); // Re-check roles on any change
+        }
+      )
+      .subscribe();})();
+
+    // Initial role check
+    checkRoles();
+
+    (async () => {
+      await supabase
+        .channel('game_status')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'codenames_games',
             filter: `lobby_code=eq.${lobbyCode}`
-          }, 
+          },
           (payload) => {
-            console.log('Change received!', payload);
-            fetchPlayers();
+            const updatedRow = payload.new as { game_started?: boolean };
+            if (updatedRow.game_started) {
+              router.push(`/codenames/playgame/${lobbyCode}`);
+            }
           }
         )
         .subscribe();
-        
+    })();
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeAllChannels()
       };
     }
   }, [lobbyCode, userId]);
@@ -207,20 +286,20 @@ const CodenamesLobby = () => {
         throw new Error("Failed to fetch the CSV file");
       }
       const csvText = await response.text();
-
+  
       // Parse the CSV content
       const words = Papa.parse<string[]>(csvText, {
         header: false, // Adjust based on your CSV structure
         skipEmptyLines: true,
       }).data.flat(); // Flatten the array if necessary
-
+  
       if (words.length < 25) {
         throw new Error('Not enough words in the word bank');
       }
-
+  
       // Step 3: Shuffle and select 25 words
       const selectedWords = shuffleArray(words).slice(0, 25);
-
+  
       // Step 4: Assign colors
       const colors = [
         ...Array(8).fill('red'),
@@ -231,21 +310,26 @@ const CodenamesLobby = () => {
       const shuffledColors = shuffleArray(colors);
 
       // Step 5: Create word-color mapping with revealed state
-      const wordColorMapping = {};
+      // Define the type for the word color mapping
+      type WordColorMapping = Record<string, [string, boolean]>;
+      const wordColorMapping: WordColorMapping = {};
+      
       selectedWords.forEach((word, index) => {
         wordColorMapping[word] = [shuffledColors[index], false]; // [color, revealed]
       });
-
+  
       // Step 6: Insert into Supabase
       const { error } = await supabase
         .from('codenames_games')
         .upsert([{
           lobby_code: lobbyCode,
-          words: wordColorMapping
+          words: wordColorMapping,
+          current_role_turn: "red_spymaster", // Set initial turn to red_spymaster
+          game_started: false
         }]);
-
+  
       if (error) throw error;
-
+  
       console.log('Inserted successfully!', wordColorMapping);
     } catch (err) {
       console.error('Error:', err);
@@ -263,25 +347,31 @@ const CodenamesLobby = () => {
   }
   
   // Function to start the game and redirect all players
-  const startGame = () => {
-    generateAndUploadCards();
-    router.push(`/codenames/playgame/${lobbyCode}`);
+  const startGame = async () => {
+    await generateAndUploadCards();
+    
+    const { error } = await supabase
+      .from("codenames_games")
+      .update({ game_started: true })
+      .eq("lobby_code", lobbyCode);
+      
+    if (error) {
+      throw new Error(`Failed to start game: ${error.message}`);
+    }
+
   };
 
-<<<<<<< HEAD
   const openModal = () => setModalOpen(true);
   const closeModal = () => setModalOpen(false);
-=======
   // Helper function to get team color from role
-  const getTeamFromRole = (role: string) => {
-    return role.startsWith('red_') ? 'red' : 'blue';
-  };
+  //const getTeamFromRole = (role: string) => {
+  //  return role.startsWith('red_') ? 'red' : 'blue';
+  //};
 
   // Helper function to get role type from role
-  const getRoleTypeFromRole = (role: string) => {
-    return role.endsWith('_spymaster') ? 'spymaster' : 'operative';
-  };
->>>>>>> 83bd63d1407db06fb536af00acfd389d85bbfb4d
+  //const getRoleTypeFromRole = (role: string) => {
+  //  return role.endsWith('_spymaster') ? 'spymaster' : 'operative';
+  //};
 
   return (
     <div className="flex flex-col min-h-screen bg-red-400">
@@ -397,6 +487,7 @@ const CodenamesLobby = () => {
           {/* Start Game Button */}
           <Button
             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 mt-6 text-lg"
+            disabled={!canStartGame}
             onClick={startGame}
           >
             Start Game

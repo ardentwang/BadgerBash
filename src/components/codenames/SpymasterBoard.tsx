@@ -1,4 +1,3 @@
-// SpymasterBoard.tsx
 "use client"
 
 import React, { useState } from 'react';
@@ -102,10 +101,17 @@ const SpymasterBoard: React.FC<SpymasterBoardProps> = ({
         {words.map((word, index) => (
           <div 
             key={index}
-            className={`${getColorClass(word.color)} p-4 h-20 flex items-center justify-center rounded shadow text-center font-semibold ${word.revealed ? 'opacity-60' : ''}`}
+            className={`${getColorClass(word.color)} p-4 h-20 relative flex items-center justify-center rounded shadow text-center font-semibold`}
           >
             {word.word}
-            {word.revealed && <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded text-white font-bold text-xs">REVEALED</div>}
+            {/* Modified revealed indicator - small checkmark in corner instead of overlay */}
+            {word.revealed && (
+              <div className="absolute top-1 right-1 w-5 h-5 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            )}
           </div>
         ))}
       </div>
