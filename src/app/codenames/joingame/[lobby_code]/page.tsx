@@ -362,7 +362,6 @@ const CodenamesLobby = () => {
   };
 
   const openModal = () => setModalOpen(true);
-  const closeModal = () => setModalOpen(false);
   // Helper function to get team color from role
   //const getTeamFromRole = (role: string) => {
   //  return role.startsWith('red_') ? 'red' : 'blue';
@@ -394,13 +393,13 @@ const CodenamesLobby = () => {
                 🕵️ Each team has a <span className="font-bold">Spymaster</span> who gives one-word clues tied to multiple words on the board.
               </p>
               <p className="text-base text-white leading-relaxed">
-                🧩 The clue includes a word + number (e.g. <span className="italic">“Ocean, 2”</span>) hinting at two words on the board that relate to the word <span className="italic">"Ocean"</span>.
+                🧩 The clue includes a word + number (e.g. <span className="italic">“Ocean, 2”</span>) hinting at two words on the board that relate to the word <span className="italic">`&quot;`Ocean`&quot;`</span>.
               </p>
               <p className="text-base text-white leading-relaxed">
                 🧠 Operatives click on tiles to guess the correct words. Guess right, and the tile turns your team’s color!
               </p>
               <p className="text-base text-white leading-relaxed">
-                🚫 If you hit a <span className="italic">neutral card</span> (a white card), your turn ends. If you hit the other team's word, you help them!
+                🚫 If you hit a <span className="italic">neutral card</span> (a white card), your turn ends. If you hit the other team`&apos;`s word, you help them!
               </p>
               <p className="text-base text-white leading-relaxed">
                 ☠️ If you pick the <span className="font-bold">assassin</span> (a black card), your team instantly loses.
