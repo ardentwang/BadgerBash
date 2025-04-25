@@ -58,12 +58,19 @@ const CreateLobby = () => {
   return (
     //<div className="w-64">
       <Button
-        className="w-full py-7 text-lg text-white bg-blue-800"
+        //className="w-full py-7 text-lg text-white bg-blue-800"
+        className="w-32 h-32 flex items-center justify-center text-center text-lg font-bold text-gray-800 bg-gradient-to-b from-[#FADADD] to-[#FADADD] border-[3px] border-black rounded-full shadow-lg hover:shadow-[0_0_35px_rgba(255,105,180,1),0_0_15px_rgba(255,255,255,0.8)] active:translate-y-1 active:shadow-md transition-all duration-200 ease-in-out cursor-pointer"
         size="lg"
         onClick={createLobby} // ✅ Fix: Call `createLobby`, not `CreateLobby`
         disabled={loading}
       >
-        {loading ? "Creating Lobby..." : "Create Game Lobby"}
+        {loading ? (
+          "Creating"
+        ) : (
+          <>
+          Create <br /> Lobby
+        </>
+      )}
       </Button>
     //</div>
   );
