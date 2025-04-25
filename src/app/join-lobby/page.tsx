@@ -125,18 +125,61 @@ export default function JoinLobby() {
     
     return (
         <div>
-            <Button className="absolute mt-5 ml-5" variant="outline" size="icon" asChild>
+            <Button className="absolute mt-5 ml-5" size="icon" asChild>
                 <Link href="/">
                     <ChevronLeft />
                 </Link>
             </Button>
             
-            <div className="absolute mt-10 left-1/2 transform -translate-x-1/2 w-fit">
-                <Tabs defaultValue="available" className="w-full">
-                    <TabsList>
+            <div className="flex justify-center pt-20">
+                <Tabs defaultValue="code" className="w-full max-w-md">
+                    <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="code">Join with Code</TabsTrigger>
                         <TabsTrigger value="available">Available Lobbies</TabsTrigger>
                     </TabsList>
+                    
+                    <TabsContent value="code" className="flex flex-col items-center">
+                        <div className="w-full">
+                            <div className="card border rounded-lg p-6 shadow-sm bg-foreground text-background">
+                                <div className="card-header mb-4">
+                                    <h3 className="text-lg font-medium text-center">Join with Code</h3>
+                                </div>
+                                <div className="card-content flex flex-col items-center">
+                                    <div className="mb-5 text-center">Please enter the 6 digit code to join a lobby</div>
+                                    <InputOTP 
+                                        maxLength={6} 
+                                        value={lobbyCode}
+                                        onChange={(value) => setLobbyCode(value)}
+                                        onComplete={(value) => handleJoinWithCode(value)}
+                                    >
+                                        <InputOTPGroup>
+                                            <InputOTPSlot index={0} spellCheck="false"/>
+                                            <InputOTPSlot index={1} />
+                                            <InputOTPSlot index={2} />
+                                        </InputOTPGroup>
+                                        <InputOTPSeparator />
+                                        <InputOTPGroup>
+                                            <InputOTPSlot index={3} />
+                                            <InputOTPSlot index={4} />
+                                            <InputOTPSlot index={5} />
+                                        </InputOTPGroup>
+                                    </InputOTP>
+                                    
+                                    {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+                                </div>
+                                <div className="card-footer mt-6 flex justify-center">
+                                    <Button 
+                                        variant="outline"
+                                        className="bg-background text-foreground hover:bg-secondary"
+                                        onClick={() => handleJoinWithCode(lobbyCode)}
+                                        disabled={isJoining || !lobbyCode || lobbyCode.length < 6}
+                                    >
+                                        {isJoining ? "Joining..." : "Join Lobby"}
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </TabsContent>
                     
                     <TabsContent value="available" className="w-full">
                         <div className="w-full">
@@ -157,39 +200,6 @@ export default function JoinLobby() {
                                 ))
                             )}
                         </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="code" className="absolute flex flex-col">
-                        <div className="mb-5">Please enter the 6 digit code to join a lobby</div>
-                        
-                        <InputOTP 
-                            maxLength={6} 
-                            value={lobbyCode}
-                            onChange={(value) => setLobbyCode(value)}
-                            onComplete={(value) => handleJoinWithCode(value)}
-                        >
-                            <InputOTPGroup>
-                                <InputOTPSlot index={0} />
-                                <InputOTPSlot index={1} />
-                                <InputOTPSlot index={2} />
-                            </InputOTPGroup>
-                            <InputOTPSeparator />
-                            <InputOTPGroup>
-                                <InputOTPSlot index={3} />
-                                <InputOTPSlot index={4} />
-                                <InputOTPSlot index={5} />
-                            </InputOTPGroup>
-                        </InputOTP>
-                        
-                        {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
-                        
-                        <Button 
-                            className="mt-4"
-                            onClick={() => handleJoinWithCode(lobbyCode)}
-                            disabled={isJoining || !lobbyCode || lobbyCode.length < 6}
-                        >
-                            {isJoining ? "Joining..." : "Join Lobby"}
-                        </Button>
                     </TabsContent>
                 </Tabs>
             </div>

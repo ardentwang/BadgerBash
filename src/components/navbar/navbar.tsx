@@ -60,7 +60,10 @@ const NavBar = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="flex items-center gap-2 h-10 px-3">
+                <Button 
+                  variant="ghost" 
+                  className="flex items-center gap-2 h-10 px-3 focus:outline-none focus-visible:ring-0 focus:ring-0"
+                >
                   <div className="w-8 h-8 rounded-full overflow-hidden relative">
                     <Image 
                       src={avatarUrl}
@@ -128,19 +131,25 @@ const NavBar = () => {
       />
 
       {showAvatarSelector && (
-        <div className="absolute top-20 right-4 z-50 bg-white p-4 rounded-xl shadow-lg border w-72">
-          <h3 className="font-semibold mb-2 text-lg">Choose an Avatar</h3>
-          <AvatarSelector
-            currentAvatar={avatarUrl}
-            onSelect={handleAvatarChange}
-          />
-          <Button
-            variant="ghost"
-            className="mt-3 w-full"
-            onClick={() => setShowAvatarSelector(false)}
+        <div className="fixed inset-0 z-40" onClick={() => setShowAvatarSelector(false)}>
+          <div 
+            className="absolute top-20 right-4 z-50 bg-white p-4 rounded-xl shadow-lg border w-72"
+            onClick={(e) => e.stopPropagation()} // Prevent clicks inside from closing
           >
-            Cancel
-          </Button>
+            <h3 className="font-semibold mb-2 text-lg">Choose an Avatar</h3>
+            <AvatarSelector
+              currentAvatar={avatarUrl}
+              onSelect={handleAvatarChange}
+              onClose={() => setShowAvatarSelector(false)}
+            />
+            <Button
+              variant="ghost"
+              className="mt-3 w-full bg-red-100 hover:bg-red-200 text-red-800"
+              onClick={() => setShowAvatarSelector(false)}
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
       )}
     </div>
