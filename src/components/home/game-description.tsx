@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 
 export default function GameDescription() {
   const descriptions = [
-    "The ultimate badger-themed party game!",
+    "The ultimate party game website!",
     "Compete with friends in fun mini-games",
-    "Play together and earn badges",
+    "Play together in a laid-back environment",
     "Create or join a game lobby to start"
   ]
 
