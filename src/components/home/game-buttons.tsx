@@ -65,7 +65,7 @@ export default function GameButtons() {
     <div className="flex flex-col sm:flex-row gap-6 mb-10">
       {/* Join Button */}
       <Button 
-        className="w-64 h-14 text-lg bg-foreground text-background hover:bg-foreground/90"
+        className="w-64 h-14 text-lg bg-foreground text-background hover:foreground/90"
         asChild
       >
         <Link href="/join-lobby">
@@ -75,7 +75,7 @@ export default function GameButtons() {
 
       {/* Create Button */}
       <Button 
-        className="w-64 h-14 text-lg bg-foreground text-background hover:bg-foreground/90"
+        className="w-64 h-14 text-lg bg-foreground text-background hover:foreground/90"
         onClick={handleCreateLobby}
         disabled={isCreating}
       >

@@ -418,7 +418,7 @@ const LobbyPage = () => {
                   <Button 
                     className="w-full hover:bg"
                     onClick={handleStartGame}
-                    disabled={players.length < 2} // Require at least 2 players
+                    disabled={players.length < 4} // Require at least 4 players
                   >
                     Start Game
                   </Button>
