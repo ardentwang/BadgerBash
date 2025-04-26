@@ -712,17 +712,14 @@ const CodenamesGame = () => {
     <div className="flex flex-col min-h-screen bg-red-400 p-6">
       {/* Header with game info */}
       <div className="flex justify-between items-center mb-4">
-        <span className="bg-yellow-400 text-black px-3 py-1 rounded-lg">
+        <span className="text-white px-3 py-1 rounded-lg">
           Lobby: {lobbyCode}
         </span>
         <h1 className="text-2xl font-bold text-white">Codenames</h1>
-        <span className="bg-yellow-400 text-black px-3 py-1 rounded-lg">
-          You: {team} {roleType}
-        </span>
       </div>
 
       {/* Game status */}
-      <div className="bg-yellow-100 p-3 rounded-lg shadow mb-4 text-center">
+      <div className="bg-purple-100 p-3 rounded-lg shadow mb-4 text-center">
         {gameOver ? (
           <div>
             <h3 className="text-lg font-semibold">Game Over!</h3>
@@ -730,7 +727,7 @@ const CodenamesGame = () => {
           </div>
         ) : (
           <div>
-            <h3 className="text-lg font-semibold">Current Turn</h3>
+            <h3 className="text-lg font-semibold text-white text-outline">Current Turn</h3>
             <p className={`text-2xl font-bold ${currentTurn.startsWith('red_') ? 'text-red-600' : 'text-blue-600'}`}>
               {currentTurn.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </p>
