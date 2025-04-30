@@ -10,6 +10,8 @@ const avatarImages = [
   { file: 'programmer.png', label: 'Programmer' },
   { file: 'student.png', label: 'Student' },
   { file: 'wizard.png', label: 'Wizard' },
+  { file: 'ballet.png', label: 'Ballerina'},
+  { file: 'ninja.png', label: 'Ninja-Badja'},
 ];
 
 export default function AvatarSelector({
