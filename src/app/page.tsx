@@ -2,6 +2,8 @@
 import NavBar from '@/components/navbar/navbar'
 import GameDescription from '@/components/home/game-description'
 import GameButtons from '@/components/home/game-buttons'
+import ChangelogButton from '@/components/home/changelog-button'
+
 
 export default function Home() {
   return (
@@ -26,6 +28,9 @@ export default function Home() {
           alt="Cute badgers playing games" 
           className="w-[200px] mt-8 rounded-lg" 
         />
+
+        {/* Changelog Modal */}
+        <ChangelogButton />
       </div>
     </div>
   );

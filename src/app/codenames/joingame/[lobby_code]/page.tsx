@@ -40,6 +40,10 @@ const CodenamesLobby = () => {
   const lobbyCode = arrayLobbyCode ? parseInt(arrayLobbyCode, 10) : 0; 
   const [players, setPlayers] = useState<FormattedPlayer[]>([]);
   const [loading, setLoading] = useState(false);
+<<<<<<< HEAD
+  //const [userRole, setUserRole] = useState(null);
+=======
+>>>>>>> bcd96b2d729a0edb77f85e8eca05268f98f76be9
   const [modalOpen, setModalOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [canStartGame, setCanStartGame] = useState(false);
@@ -365,6 +369,15 @@ const CodenamesLobby = () => {
   };
 
   const openModal = () => setModalOpen(true);
+  // Helper function to get team color from role
+  //const getTeamFromRole = (role: string) => {
+  //  return role.startsWith('red_') ? 'red' : 'blue';
+  //};
+
+  // Helper function to get role type from role
+  //const getRoleTypeFromRole = (role: string) => {
+  //  return role.endsWith('_spymaster') ? 'spymaster' : 'operative';
+  //};
 
   return (
     <div className="flex flex-col min-h-screen bg-red-400">
