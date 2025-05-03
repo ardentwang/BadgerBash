@@ -40,10 +40,6 @@ const CodenamesLobby = () => {
   const lobbyCode = arrayLobbyCode ? parseInt(arrayLobbyCode, 10) : 0; 
   const [players, setPlayers] = useState<FormattedPlayer[]>([]);
   const [loading, setLoading] = useState(false);
-<<<<<<< HEAD
-  //const [userRole, setUserRole] = useState(null);
-=======
->>>>>>> bcd96b2d729a0edb77f85e8eca05268f98f76be9
   const [modalOpen, setModalOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [canStartGame, setCanStartGame] = useState(false);

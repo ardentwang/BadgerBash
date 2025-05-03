@@ -3,6 +3,7 @@ import NavBar from '@/components/navbar/navbar'
 import GameDescription from '@/components/home/game-description'
 import GameButtons from '@/components/home/game-buttons'
 import ChangelogButton from '@/components/home/changelog-button'
+import Image from 'next/image'
 
 
 export default function Home() {
@@ -23,10 +24,13 @@ export default function Home() {
         <GameButtons />
         
         {/* Static Image - Server Rendered */}
-        <img 
+        <Image 
           src="/animated/kawaiiBadgers3.gif" 
           alt="Cute badgers playing games" 
-          className="w-[200px] mt-8 rounded-lg" 
+          width={200}
+          height={200}
+          className="mt-8 rounded-lg" 
+          unoptimized
         />
 
         {/* Changelog Modal */}
