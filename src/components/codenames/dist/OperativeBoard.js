@@ -41,10 +41,6 @@ var OperativeBoard = function (_a) {
     console.log("\uD83D\uDCCA Words count: " + words.length);
     console.log("\uD83D\uDCCA Revealed words: " + words.filter(function (w) { return w.revealed; }).length);
     return (react_1["default"].createElement("div", { className: "flex flex-col items-center" },
-        react_1["default"].createElement("h2", { className: "text-lg font-bold mb-4" },
-            "Operative View - ",
-            team,
-            " Team"),
         !canInteract && (react_1["default"].createElement("div", { className: "mb-4 p-3 bg-yellow-100 rounded-lg text-center" },
             react_1["default"].createElement("p", { className: "font-medium" }, "Waiting for your turn to select a word"))),
         react_1["default"].createElement("div", { className: "grid grid-cols-5 gap-2 bg-orange-900 p-4 rounded-lg" }, words.map(function (tile, index) { return (react_1["default"].createElement("div", { key: index, className: "relative w-28 h-20 rounded-md font-bold " + (canInteract && !tile.revealed ? 'cursor-pointer hover:opacity-80' : ''), onClick: function () { return handleTileClick(index); }, "data-testid": "card-" + index + "-" + tile.word }, tile.revealed ? (react_1["default"].createElement("div", { className: "w-full h-full flex items-center justify-center rounded-md\n                " + (tile.color === "blue"
