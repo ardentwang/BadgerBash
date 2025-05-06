@@ -1,7 +1,3 @@
-// NavBar.tsx - Updated component with Change Username functionality
-
-"use client"
-
 import { useState } from "react"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
