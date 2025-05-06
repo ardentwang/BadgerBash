@@ -365,6 +365,15 @@ const CodenamesLobby = () => {
   };
 
   const openModal = () => setModalOpen(true);
+  // Helper function to get team color from role
+  //const getTeamFromRole = (role: string) => {
+  //  return role.startsWith('red_') ? 'red' : 'blue';
+  //};
+
+  // Helper function to get role type from role
+  //const getRoleTypeFromRole = (role: string) => {
+  //  return role.endsWith('_spymaster') ? 'spymaster' : 'operative';
+  //};
 
   return (
     <div className="flex flex-col min-h-screen bg-red-400">
