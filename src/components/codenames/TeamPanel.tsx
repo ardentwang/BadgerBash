@@ -15,9 +15,9 @@ const TeamPanel: React.FC<TeamPanelProps> = ({ color, players, userId, score }) 
   
   return (
     <Card className={`w-56 p-4 ${bgColor} text-white rounded-lg`}>
-      <h3 className="text-xl font-bold">{color === "red" ? "Red" : "Blue"} Team {score !== undefined && `(${score})`}</h3>
+      <h3 className="text-xl">{color === "red" ? "Red" : "Blue"} Team {score !== undefined && `(${score})`}</h3>
       <div className="mt-2">
-        <p className="font-bold mt-2">Operatives:</p>
+        <p className="mt-2">Operatives:</p>
         {players
           .filter(player => player.role === `${rolePrefix}operative`)
           .map((player, index) => (
@@ -29,7 +29,7 @@ const TeamPanel: React.FC<TeamPanelProps> = ({ color, players, userId, score }) 
           <div className="text-sm">-</div>
         }
         
-        <p className="font-bold mt-2">Spymaster:</p>
+        <p className="mt-2">Spymaster:</p>
         {players
           .filter(player => player.role === `${rolePrefix}spymaster`)
           .map((player, index) => (

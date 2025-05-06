@@ -758,7 +758,7 @@ const CodenamesGame = () => {
       </div>
 
       {/* Game status */}
-      <div className="bg-purple-100 p-3 rounded-lg shadow mb-4 text-center">
+      <div className="bg-fuchsia-300 p-3 rounded-lg shadow mb-4 text-center">
         {gameOver ? (
           <div>
             <h3 className="text-lg font-semibold">Game Over!</h3>
@@ -777,8 +777,8 @@ const CodenamesGame = () => {
             )}
             {currentClue && (
               <div className="mt-2">
-                <p className="text-xl">
-                  Current Clue: <span className="font-bold">{currentClue.clue} - {currentClue.number}</span>
+                <p className="text-xl text-outline">
+                  Current Clue: <span>{currentClue.clue} - {currentClue.number}</span>
                 </p>
               </div>
             )}
