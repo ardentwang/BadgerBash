@@ -78,10 +78,10 @@ const SpymasterBoard: React.FC<SpymasterBoardProps> = ({
 
   const getColorClass = (color: string) => {
     switch (color) {
-      case 'red': return 'bg-red-500 text-white';
-      case 'blue': return 'bg-blue-500 text-white';
-      case 'black': return 'bg-black text-white';
-      case 'yellow': return 'bg-yellow-200';
+      case 'red': return 'bg-red-600 text-white text-outline';
+      case 'blue': return 'bg-blue-600 text-white text-outline';
+      case 'black': return 'bg-black text-white text-outline';
+      case 'yellow': return 'bg-gray-300 text-outline';
       default: return 'bg-gray-200';
     }
   };
@@ -125,15 +125,15 @@ const SpymasterBoard: React.FC<SpymasterBoardProps> = ({
         )}
         
         {!canInteract && (
-          <div className="bg-yellow-100 p-2 mb-2 rounded-md text-center">
-            <p className="font-medium">Waiting for your turn to give a clue</p>
+          <div className="bg-fuchsia-300 p-2 mb-2 rounded-md text-center">
+            <p className="font-medium text-outline">Waiting for your turn to give a clue</p>
           </div>
         )}
         
         <form onSubmit={handleSubmitClue} className="flex items-end space-x-2">
           <div className="flex-grow">
             <label htmlFor="clue" className="block text-sm font-medium text-gray-700 mb-1">
-              One-word clue:
+              Word Clue:
             </label>
             <Input
               id="clue"

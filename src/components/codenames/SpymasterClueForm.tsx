@@ -93,7 +93,7 @@ const SpymasterClueForm: React.FC<SpymasterClueFormProps> = ({
           )}
           
           <div className="space-y-2">
-            <Label htmlFor="clue">Enter your one-word clue:</Label>
+            <Label htmlFor="clue">Enter your clue:</Label>
             <Input
               id="clue"
               value={clue}
