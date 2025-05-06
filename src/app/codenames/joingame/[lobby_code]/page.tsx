@@ -281,7 +281,7 @@ const CodenamesLobby = () => {
   };
 
   async function generateAndUploadCards() {
-    const filePath = "/word_bank/uw_codenames_words_updated.csv"; // Path to your CSV file
+    const filePath = "/word_bank/final.csv"; // Path to your CSV file
     try {
       // Fetch the CSV file
       const response = await fetch(filePath);
