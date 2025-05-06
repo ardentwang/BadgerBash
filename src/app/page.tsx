@@ -1,41 +1,48 @@
-// app/page.js - Server Component
-import NavBar from '@/components/navbar/navbar'
-import GameDescription from '@/components/home/game-description'
-import GameButtons from '@/components/home/game-buttons'
-import ChangelogButton from '@/components/home/changelog-button'
-import Image from 'next/image'
-
+import NavBar from '@/components/navbar/navbar';
+import GameDescription from '@/components/home/game-description';
+import GameButtons from '@/components/home/game-buttons';
+import ChangelogButton from '@/components/home/changelog-button';
+import Image from 'next/image';
 
 export default function Home() {
   return (
-    <div className="bg-background min-h-screen col-span-full relative">
+    <div className="relative min-h-screen bg-background">
+      {/* ═════ NAV ═════ */}
+      
       <NavBar />
 
-      <div className="flex flex-col justify-center items-center min-h-screen">
-        {/* Simple Title - Server Rendered */}
-        <h1 className="text-foreground text-6xl font-bold mb-4">
-          BadgerBash
-        </h1>
 
-        {/* Client Component for animated description */}
+
+      {/* ═════ MAIN LANDING CONTENT ═════ */}
+      <main className="flex flex-col items-center justify-center min-h-screen space-y-10 px-4 text-center">
+        {/* — Headline + orbiting avatar — */}
+        <div className="relative flex items-center justify-center">
+          <h1 className="font-minecraft text-foreground text-6xl font-bold select-none">
+            BadgerBash
+          </h1>
+
+          {/* Mini avatar that loops around the headline */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div className="orbiting w-20 h-20 rounded-full overflow-hidden drop-shadow-lg">
+              <Image
+                src="/avatars/party.png"        // later swap with user-selected avatar
+                alt="Orbiting badger"
+                width={80}
+                height={80}
+                priority
+                className="object-cover w-full h-full"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Description + CTAs */}
         <GameDescription />
-
-        {/* Client Component for buttons */}
         <GameButtons />
-        
-        {/* Static Image - Server Rendered */}
-        <Image 
-          src="/animated/kawaiiBadgers3.gif" 
-          alt="Cute badgers playing games" 
-          width={200}
-          height={200}
-          className="mt-8 rounded-lg" 
-          unoptimized
-        />
 
-        {/* Changelog Modal */}
+        {/* Changelog trigger */}
         <ChangelogButton />
-      </div>
+      </main>
     </div>
   );
 }

@@ -80,3 +80,110 @@ body {
     text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
   }
 }
+
+
+
+
+/* Add to your globals.css file */
+
+@keyframes run-around {
+  0% { 
+    transform: translateX(100px) translateY(0) rotate(0deg);
+  }
+  12.5% { 
+    transform: translateX(70.7px) translateY(-70.7px) rotate(45deg); 
+  }
+  25% { 
+    transform: translateX(0) translateY(-100px) rotate(90deg);
+  }
+  37.5% { 
+    transform: translateX(-70.7px) translateY(-70.7px) rotate(135deg); 
+  }
+  50% { 
+    transform: translateX(-100px) translateY(0) rotate(180deg);
+  }
+  62.5% { 
+    transform: translateX(-70.7px) translateY(70.7px) rotate(225deg); 
+  }
+  75% { 
+    transform: translateX(0) translateY(100px) rotate(270deg);
+  }
+  87.5% { 
+    transform: translateX(70.7px) translateY(70.7px) rotate(315deg); 
+  }
+  100% { 
+    transform: translateX(100px) translateY(0) rotate(360deg);
+  }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(-3px); }
+  50% { transform: translateY(3px); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px 0px rgba(66, 153, 225, 0.5); }
+  50% { box-shadow: 0 0 20px 5px rgba(66, 153, 225, 0.8); }
+  100% { box-shadow: 0 0 5px 0px rgba(66, 153, 225, 0.5); }
+}
+
+@keyframes orbit {
+  0%   { transform: rotate(0deg)   translateX(var(--orbit-radius,270px)) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(var(--orbit-radius,270px)) rotate(-360deg); }
+}
+
+.orbiting {
+  animation: orbit 12s linear infinite;
+}
+
+.running-track {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2rem auto 1rem;
+}
+
+
+.animated-badger {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  animation: run-around 10s linear infinite;
+  position: absolute;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.animated-badger img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: bob 0.5s ease-in-out infinite alternate;
+}
+
+.track-center {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: rgba(200, 200, 200, 0.2);
+  border: 2px dashed rgba(100, 100, 100, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: glow 4s ease-in-out infinite;
+}
+
+.track-center::after {
+  content: "";
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  border: 2px dashed rgba(100, 100, 100, 0.2);
+  position: absolute;
+}
+
+
