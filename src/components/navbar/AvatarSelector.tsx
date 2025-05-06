@@ -10,6 +10,20 @@ const avatarImages = [
   { file: 'programmer.png', label: 'Programmer' },
   { file: 'student.png', label: 'Student' },
   { file: 'wizard.png', label: 'Wizard' },
+  { file: 'ballet.png', label: 'Ballerina'},
+  { file: 'ninja.png', label: 'Ninja-Badja'},
+  { file: 'pirate.png', label: 'Pirate'},
+  { file: 'gamer.png', label: 'Gamer'},
+  { file: 'samurai.png', label: 'Samurai'},
+  { file: 'queen.png', label: 'Queen'},
+  { file: 'karate.png', label: 'Karate'},
+  { file: 'buffbadger.png', label: 'Buff Badger'},
+  { file: 'viking.png', label: 'Viking'},
+  { file: 'princess.png', label: 'Princess'},
+  { file: 'king.png', label: 'King'},
+  { file: 'zookeeper.png', label: 'Zookeeper'},
+  { file: 'astronaut.png', label: 'Astronaut'},
+  { file: 'soundcloudrapper.png', label: 'Soundcloud Rapper'},
 ];
 
 export default function AvatarSelector({
@@ -77,27 +91,32 @@ export default function AvatarSelector({
   };
 
   return (
-    <div ref={containerRef} className="grid grid-cols-2 gap-6 place-items-center">
-      {avatarImages.map(({ file, label }) => {
-        const isSelected = currentAvatar.includes(file);
-        return (
-          <div key={file} className="flex flex-col items-center">
-            <div className="relative w-20 h-20">
-              <Image
-                src={`/avatars/${file}`}
-                alt={label}
-                fill
-                sizes="5rem"
-                className={`rounded-full cursor-pointer border-4 transition object-cover ${
-                  isSelected ? 'border-blue-500' : 'border-transparent hover:border-gray-300'
-                }`}
-                onClick={() => handleAvatarSelect(`/avatars/${file}`)}
-              />
+    <div 
+      ref={containerRef} 
+      className="max-h-96 overflow-y-auto p-4 rounded-lg"
+    >
+      <div className="grid grid-cols-2 gap-6 place-items-center">
+        {avatarImages.map(({ file, label }) => {
+          const isSelected = currentAvatar.includes(file);
+          return (
+            <div key={file} className="flex flex-col items-center mb-4">
+              <div className="relative w-20 h-20">
+                <Image
+                  src={`/avatars/${file}`}
+                  alt={label}
+                  fill
+                  sizes="5rem"
+                  className={`rounded-full cursor-pointer border-4 transition object-cover ${
+                    isSelected ? 'border-blue-500' : 'border-transparent hover:border-gray-300'
+                  }`}
+                  onClick={() => handleAvatarSelect(`/avatars/${file}`)}
+                />
+              </div>
+              <span className="mt-1 text-sm font-medium text-gray-700">{label}</span>
             </div>
-            <span className="mt-1 text-sm font-medium text-gray-700">{label}</span>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
