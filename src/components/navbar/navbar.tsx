@@ -1,3 +1,5 @@
+// NavBar.tsx - Updated component with Change Username functionality
+
 "use client"
 
 import { useState } from "react"
@@ -16,16 +18,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 
 const NavBar = () => {
   const { user, isGuest, isLoading } = useAuth()
   const [isSignInModalOpen, setIsSignInModalOpen] = useState(false)
   const [isSignUpModalOpen, setIsSignUpModalOpen] = useState(false)
   const [showAvatarSelector, setShowAvatarSelector] = useState(false)
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut()
-  }
+  const [isUsernameModalOpen, setIsUsernameModalOpen] = useState(false)
+  const [newUsername, setNewUsername] = useState("")
+  const [isUpdating, setIsUpdating] = useState(false)
 
   const handleAvatarChange = async (newAvatar: string) => {
     const { error } = await supabase.auth.updateUser({
@@ -37,6 +46,43 @@ const NavBar = () => {
       window.location.reload() // You can use context-based update instead if preferred
     } else {
       console.error("Failed to update avatar:", error.message)
+    }
+  }
+
+  const handleUsernameUpdate = async () => {
+    if (!user || !newUsername.trim()) return;
+    
+    setIsUpdating(true);
+    try {
+      // Update auth metadata
+      const { error: authError } = await supabase.auth.updateUser({
+        data: { username: newUsername.trim() }
+      });
+      
+      if (authError) {
+        console.error("Error updating auth metadata:", authError);
+        return;
+      }
+      
+      // Update users table
+      const { error: dbError } = await supabase
+        .from('users')
+        .update({ username: newUsername.trim() })
+        .eq('id', user.id);
+        
+      if (dbError) {
+        console.error("Error updating username in database:", dbError);
+        return;
+      }
+      
+      // Successful update
+      setIsUsernameModalOpen(false);
+      window.location.reload(); // Reload to reflect changes
+      
+    } catch (error) {
+      console.error("Error changing username:", error);
+    } finally {
+      setIsUpdating(false);
     }
   }
 
@@ -82,20 +128,9 @@ const NavBar = () => {
                 <DropdownMenuItem onClick={() => setShowAvatarSelector(true)}>
                   Change Avatar
                 </DropdownMenuItem>
-                {isGuest ? (
-                  <>
-                    <DropdownMenuItem onClick={() => setIsSignUpModalOpen(true)}>
-                      Create Full Account
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setIsSignInModalOpen(true)}>
-                      Sign In with Existing Account
-                    </DropdownMenuItem>
-                  </>
-                ) : (
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    Sign Out
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem onClick={() => setIsUsernameModalOpen(true)}>
+                  Change Username
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -152,6 +187,39 @@ const NavBar = () => {
           </div>
         </div>
       )}
+
+      {/* Username Change Modal */}
+      <Dialog open={isUsernameModalOpen} onOpenChange={setIsUsernameModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Username</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              type="text"
+              placeholder="Enter new username"
+              value={newUsername}
+              onChange={(e) => setNewUsername(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsUsernameModalOpen(false)}
+              disabled={isUpdating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUsernameUpdate}
+              disabled={isUpdating || !newUsername.trim()}
+            >
+              {isUpdating ? "Updating..." : "Update"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

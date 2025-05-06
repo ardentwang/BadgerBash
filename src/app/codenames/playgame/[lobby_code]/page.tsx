@@ -788,7 +788,7 @@ const CodenamesGame = () => {
           color="blue" 
           players={players.filter(p => p.role.startsWith('blue_'))} 
           userId={userId || ""} // Provide empty string as fallback
-          score={remainingRedWords}
+          score={remainingBlueWords}
         />
       </div>
 

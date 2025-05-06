@@ -70,8 +70,6 @@ const OperativeBoard: React.FC<OperativeBoardProps> = ({
   
   return (
     <div className="flex flex-col items-center">
-      <h2 className="text-lg font-bold mb-4">Operative View - {team} Team</h2>
-      
       {!canInteract && (
         <div className="mb-4 p-3 bg-yellow-100 rounded-lg text-center">
           <p className="font-medium">Waiting for your turn to select a word</p>
