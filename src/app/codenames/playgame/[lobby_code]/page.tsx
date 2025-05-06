@@ -12,6 +12,8 @@ import OperativeBoard from "@/components/codenames/OperativeBoard";
 import TeamPanel from "@/components/codenames/TeamPanel";
 import GameLog from "@/components/codenames/GameLog";
 import WordsDebugPanel from "@/components/codenames/WordsDebugPanel";
+import { useRouter } from "next/navigation"; // near top of file
+
 
 // Define the role type enum
 type RoleType = "red_spymaster" | "red_operative" | "blue_spymaster" | "blue_operative";
@@ -151,6 +153,7 @@ const CodenamesGame = () => {
   const [gameOver, setGameOver] = useState(false);
   const [winner, setWinner] = useState<TeamColor | null>(null);
 
+
   // Helper functions for role/team
   const getTeamFromRole = (role: RoleType): TeamColor => {
     return role.startsWith("red_") ? "red" : "blue";
@@ -205,7 +208,7 @@ const CodenamesGame = () => {
       console.log(`🔵 Blue words: ${blueWords.length} (${blueWords.filter(w => w.revealed).length} revealed)`);
       console.log(`🟡 Yellow words: ${yellowWords.length} (${yellowWords.filter(w => w.revealed).length} revealed)`);
       console.log(`⚫ Black words: ${blackWords.length} (${blackWords.filter(w => w.revealed).length} revealed)`);
-      
+    
       // Set the processed words to state
       setWordsList(processedWords);
       
@@ -218,45 +221,81 @@ const CodenamesGame = () => {
       setRemainingBlueWords(remainingBlueCount);
       
       // Check for game over conditions
-      checkGameOverConditions(processedWords);
+      //checkGameOverConditions(processedWords);
+    
       
+
     } catch (error) {
       console.error("❌ Error processing words data:", error);
       console.error("📊 Problem data:", Object.keys(wordsData).length, "words");
     }
   }, []);
   
+  const router = useRouter(); 
   // Check if the game is over
   const checkGameOverConditions = useCallback((words: WordData[]) => {
-    // Check if all red words are revealed
     const allRedRevealed = words.filter(w => w.color === "red").every(w => w.revealed);
+    const allBlueRevealed = words.filter(w => w.color === "blue").every(w => w.revealed);
+
+    console.log(playerRole);
+  
     if (allRedRevealed) {
       setGameOver(true);
       setWinner("red");
+      if (playerRole?.includes("red")) {
+        router.push("/codenames/win/red");
+      } else {
+        router.push("/codenames/lose/blue");
+      }
       return;
     }
-    
-    // Check if all blue words are revealed
-    const allBlueRevealed = words.filter(w => w.color === "blue").every(w => w.revealed);
+  
     if (allBlueRevealed) {
       setGameOver(true);
       setWinner("blue");
+      if (playerRole?.includes("blue")) {
+        router.push("/codenames/win/blue");
+      } else {
+        router.push("/codenames/lose/red");
+      }
       return;
     }
-    
-    // Check if the assassin (black) card is revealed
+  
     const assassinRevealed = words.find(w => w.color === "black" && w.revealed);
     if (assassinRevealed) {
       setGameOver(true);
-      // The team who revealed the assassin loses
-      const assassinRevealedBy = gameLog.find(log => log.includes(assassinRevealed.word));
-      if (assassinRevealedBy?.includes("red")) {
-        setWinner("blue");
+  
+      // More reliable check for the revealing team
+      const revealedByLog = gameLog.find(log => log.includes(assassinRevealed.word) && log.includes("selected"));
+  
+      let loser: TeamColor;
+      if (revealedByLog?.includes("red")) {
+        loser = "red";
+      } else if (revealedByLog?.includes("blue")) {
+        loser = "blue";
       } else {
-        setWinner("red");
+        // Fallback: use current player's team
+        loser = playerRole?.startsWith("red") ? "red" : "blue";
+      }
+  
+      const winnerTeam = loser === "red" ? "blue" : "red";
+      setWinner(winnerTeam);
+  
+      const playerTeam = playerRole?.startsWith("red") ? "red" : "blue";
+      if (playerTeam === loser) {
+        router.push(`/codenames/lose/${loser}`);
+      } else {
+        router.push(`/codenames/win/${winnerTeam}`);
       }
     }
-  }, [gameLog]);
+  }, [gameLog, router, playerRole]);
+
+  useEffect(() => {
+    if (wordsList && playerRole) {
+      console.log("🔁 Running game over check (wordsList + playerRole available)");
+      checkGameOverConditions(wordsList);
+    }
+  }, [wordsList, playerRole, checkGameOverConditions]);
 
   // Handle game updates from real-time subscription
   const handleGameUpdate = useCallback((payload: any) => {
@@ -805,5 +844,6 @@ const CodenamesGame = () => {
     </div>
   );
 };
+
 
 export default CodenamesGame;
