@@ -63,6 +63,15 @@ export default function GameButtons() {
 
   return (
     <div className="flex flex-col sm:flex-row gap-6 mb-10">
+      {/* Create Button */}
+      <Button 
+        className="w-64 h-14 text-lg bg-foreground text-background hover:foreground/90"
+        onClick={handleCreateLobby}
+        disabled={isCreating}
+      >
+        {isCreating ? "Creating..." : "Create Game Lobby"}
+      </Button>
+      
       {/* Join Button */}
       <Button 
         className="w-64 h-14 text-lg bg-foreground text-background hover:foreground/90"
@@ -71,15 +80,6 @@ export default function GameButtons() {
         <Link href="/join-lobby">
           Join Game
         </Link>
-      </Button>
-
-      {/* Create Button */}
-      <Button 
-        className="w-64 h-14 text-lg bg-foreground text-background hover:foreground/90"
-        onClick={handleCreateLobby}
-        disabled={isCreating}
-      >
-        {isCreating ? "Creating..." : "Create Game Lobby"}
       </Button>
     </div>
   )
